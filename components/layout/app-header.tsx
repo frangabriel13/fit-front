@@ -12,10 +12,14 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Dumbbell className="size-5" />
-          FitFront
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 lg:px-6">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Dumbbell className="size-5" />
+          </span>
+          <span className="font-display text-lg tracking-wide uppercase">
+            Fit<span className="text-primary">Front</span>
+          </span>
         </Link>
         <div className="flex items-center gap-3">
           {user?.name && (
