@@ -5,6 +5,8 @@ import axios, {
 } from "axios"
 
 import { clearToken, getToken } from "@/lib/auth"
+// ⚠️ MOCK TEMPORAL — borrar este import junto con lib/mocks/ al conectar el backend.
+import { installAuthMock } from "@/lib/mocks/auth-mock"
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL
 
@@ -35,6 +37,13 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// ⚠️ MOCK TEMPORAL: con NEXT_PUBLIC_USE_MOCKS=true se intercepta el adapter
+// para responder /auth/* sin backend. Borrar este bloque (y lib/mocks/) al
+// conectar el backend real.
+if (process.env.NEXT_PUBLIC_USE_MOCKS === "true") {
+  installAuthMock(api)
+}
 
 // Helper: desempaqueta response.data tipado.
 export async function unwrap<T>(promise: Promise<{ data: T }>): Promise<T> {

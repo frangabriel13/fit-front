@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { AxiosError } from "axios"
-import { Loader2 } from "lucide-react"
+import { ArrowRight, Loader2 } from "lucide-react"
 
 import { loginSchema, type LoginValues } from "@/lib/schemas"
 import { useLogin } from "@/hooks/use-auth"
@@ -41,19 +41,22 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                Email
+              </FormLabel>
               <FormControl>
                 <Input
                   type="email"
                   inputMode="email"
                   autoComplete="email"
                   placeholder="vos@email.com"
+                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40"
                   {...field}
                 />
               </FormControl>
@@ -66,12 +69,15 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contraseña</FormLabel>
+              <FormLabel className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                Contraseña
+              </FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   autoComplete="current-password"
                   placeholder="••••••••"
+                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40"
                   {...field}
                 />
               </FormControl>
@@ -81,11 +87,14 @@ export function LoginForm() {
         />
         <Button
           type="submit"
-          className="w-full"
+          className="h-11 w-full text-[13px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-8px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
           disabled={login.isPending}
         >
           {login.isPending && <Loader2 className="animate-spin" />}
-          Entrar
+          Ingresar
+          {!login.isPending && (
+            <ArrowRight className="transition-transform group-hover/button:translate-x-0.5" />
+          )}
         </Button>
       </form>
     </Form>
