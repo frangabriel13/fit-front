@@ -9,58 +9,98 @@ import {
   HISTORY,
   ROUTINE,
   SESSION,
-  topWeight,
+  type ExerciseState,
   type RoutineExercise,
 } from "@/lib/routine-data"
+// (piezas compartidas de planilla en sheet-bits)
+import {
+  ProgressionRail,
+  SetTally,
+  sheet,
+  toSheetItems,
+  type SheetItem,
+} from "@/components/routine/sheet-bits"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-// Abreviaturas de planilla: "10 a 12" → "10-12", "0 o fallo" → "0-F".
-function sheet(value: string): string {
-  return value.replace(" o fallo", "-F").replaceAll(" a ", "-")
-}
-
-// Grilla de columnas estilo planilla (solo md+): nº · ejercicio · series ·
-// reps · rir · descanso · acciones.
+// Columnas: nº · ejercicio · series · reps · rir · descanso · acciones.
 const COLS =
   "md:grid md:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem_4.5rem_4rem_4.5rem_4.5rem] md:items-center md:gap-2"
 
-// ─── numeración de planilla: superseries comparten número con sufijo A/B ────
-
-interface SheetItem {
-  ex: RoutineExercise
-  /** "01", "04A", "04B"… */
-  label: { num: string; letter?: string }
-  /** Primera mitad de una superserie: encadena sin pausa con la siguiente. */
-  chains: boolean
+function numClass(state: ExerciseState): string {
+  return cn(
+    "font-display text-lg leading-none",
+    state === "done" && "text-primary",
+    state === "in-progress" &&
+      "text-foreground underline decoration-primary decoration-2 underline-offset-4",
+    state === "pending" && "text-muted-foreground/50"
+  )
 }
 
-function toSheetItems(exercises: RoutineExercise[]): SheetItem[] {
-  const items: SheetItem[] = []
-  let block = 0
-  let i = 0
-  while (i < exercises.length) {
-    block++
-    const ss = exercises[i].superset
-    const group = ss
-      ? exercises.filter((e, j) => j >= i && e.superset === ss)
-      : [exercises[i]]
-    group.forEach((ex, j) => {
-      items.push({
-        ex,
-        label: {
-          num: String(block).padStart(2, "0"),
-          letter: group.length > 1 ? String.fromCharCode(65 + j) : undefined,
-        },
-        chains: group.length > 1 && j < group.length - 1,
-      })
-    })
-    i += group.length
-  }
-  return items
+function StatusText({ state }: { state: ExerciseState }) {
+  return (
+    <span
+      className={cn(
+        "mt-0.5 block font-mono text-[10px] tracking-[0.14em] uppercase",
+        state === "pending" ? "text-muted-foreground/50" : "text-primary"
+      )}
+    >
+      {state === "done"
+        ? "completado"
+        : state === "in-progress"
+          ? "en curso"
+          : "pendiente"}
+    </span>
+  )
 }
 
-// ─── fila de planilla ────────────────────────────────────────────────────────
+// ─── acciones (play + chevron) ───────────────────────────────────────────────
+
+function RowActions({
+  name,
+  state,
+  expanded,
+  onToggle,
+  className,
+}: {
+  name: string
+  state: ExerciseState
+  expanded: boolean
+  onToggle: () => void
+  className?: string
+}) {
+  return (
+    <span className={cn("flex items-center justify-end gap-1.5", className)}>
+      <Link
+        href="/rutina/entrenar"
+        aria-label={`Entrenar ${name}`}
+        className={cn(
+          "flex size-7 items-center justify-center rounded-md border transition-colors",
+          state === "in-progress"
+            ? "border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
+            : "border-white/12 text-muted-foreground hover:border-primary/50 hover:text-primary"
+        )}
+      >
+        <Play className="size-3 fill-current" />
+      </Link>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label="Ver detalle"
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground"
+      >
+        <ChevronDown
+          className={cn(
+            "size-3.5 transition-transform duration-300",
+            expanded && "rotate-180"
+          )}
+        />
+      </button>
+    </span>
+  )
+}
+
+// ─── fila de ejercicio (simple o miembro A/B de una superserie) ─────────────
 
 function SheetRow({
   item,
@@ -71,13 +111,9 @@ function SheetRow({
   expanded: boolean
   onToggle: () => void
 }) {
-  const { ex, label, chains } = item
-  const logs = SESSION.logs[ex.name]
-  const state = exerciseState(logs)
-  const doneSets = logs?.filter((s) => s.status === "done").length ?? 0
-  const skipped = logs?.filter((s) => s.status === "skipped").length ?? 0
-
-  const restCell = chains ? "→" : sheet(ex.rest)
+  const { ex, num, letter, chains } = item
+  const state = exerciseState(SESSION.logs[ex.name])
+  const rest = chains ? "→" : sheet(ex.rest)
 
   return (
     <li>
@@ -87,25 +123,13 @@ function SheetRow({
           COLS
         )}
       >
-        {/* Nº — siempre visible; el estado lo cuenta el color */}
-        <span
-          className={cn(
-            "font-display text-lg leading-none",
-            state === "done" && "text-primary",
-            state === "in-progress" &&
-              "text-foreground underline decoration-primary decoration-2 underline-offset-4",
-            state === "pending" && "text-muted-foreground/50"
-          )}
-        >
-          {label.num}
-          {label.letter && (
-            <span className="ml-0.5 text-[0.7em] text-primary">
-              {label.letter}
-            </span>
+        <span className={numClass(state)}>
+          {num}
+          {letter && (
+            <span className="ml-0.5 text-[0.7em] text-primary">{letter}</span>
           )}
         </span>
 
-        {/* Ejercicio + estado en texto */}
         <button
           type="button"
           onClick={onToggle}
@@ -120,28 +144,13 @@ function SheetRow({
           >
             {ex.name}
           </span>
-          {state !== "pending" && (
-            <span
-              className={cn(
-                "mt-0.5 block font-mono text-[10px] tracking-[0.14em] uppercase",
-                state === "in-progress"
-                  ? "text-primary"
-                  : "text-muted-foreground/70"
-              )}
-            >
-              {state === "in-progress"
-                ? `en curso · ${doneSets}/${ex.sets} series`
-                : `✓ completado${skipped ? ` · ${skipped} omitida` : ""}`}
-            </span>
-          )}
-          {/* Stats inline en mobile */}
+          <StatusText state={state} />
           <span className="mt-1 block font-mono text-[12px] text-muted-foreground md:hidden">
             {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
             {chains ? "sin pausa →" : sheet(ex.rest)}
           </span>
         </button>
 
-        {/* Columnas (md+) */}
         <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
           {ex.sets}
         </span>
@@ -157,37 +166,16 @@ function SheetRow({
             chains ? "text-primary/70" : "text-foreground/85"
           )}
         >
-          {restCell}
+          {rest}
         </span>
 
-        {/* Acciones */}
-        <span className="mt-2 flex items-center justify-end gap-1.5 md:mt-0">
-          <Link
-            href="/rutina/entrenar"
-            aria-label={`Entrenar ${ex.name}`}
-            className={cn(
-              "flex size-7 items-center justify-center rounded-md border transition-colors",
-              state === "in-progress"
-                ? "border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
-                : "border-white/12 text-muted-foreground hover:border-primary/50 hover:text-primary"
-            )}
-          >
-            <Play className="size-3 fill-current" />
-          </Link>
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label="Ver detalle"
-            className="flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn(
-                "size-3.5 transition-transform duration-300",
-                expanded && "rotate-180"
-              )}
-            />
-          </button>
-        </span>
+        <RowActions
+          name={ex.name}
+          state={state}
+          expanded={expanded}
+          onToggle={onToggle}
+          className="mt-2 md:mt-0"
+        />
       </div>
 
       {expanded && <RowDetail ex={ex} />}
@@ -202,116 +190,83 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
     SESSION.logs[ex.name] ??
     Array.from({ length: ex.sets }, () => ({ status: "pending" as const }))
   const hist = HISTORY[ex.name]
-  const todayDone = logs.filter((s) => s.status === "done")
-  const refWeight = todayDone.length
-    ? topWeight(todayDone)
-    : hist
-      ? topWeight(hist.lastWeek)
-      : null
-  const gain =
-    hist && refWeight != null ? refWeight - (topWeight(hist.firstWeek) ?? 0) : null
-
-  const fmt = (sets: { weight?: number; reps?: number }[]) =>
-    sets
-      .map((s) => (s.weight != null ? `${s.weight}×${s.reps}` : "—"))
-      .join("  ·  ")
 
   return (
-    <div className="fade-up mt-1 mb-6 ml-2 space-y-5 border-l border-white/12 pl-5 md:ml-[1.05rem] md:pl-8">
-      {/* Series de hoy */}
-      <div>
-        <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
-          Hoy
-        </p>
-        <ul className="mt-2 max-w-md space-y-1.5">
-          {logs.map((s, i) => (
-            <li
-              key={i}
-              className="flex items-center justify-between font-mono text-[13px]"
-            >
-              <span className="flex items-baseline gap-3">
-                <span className="text-muted-foreground/60">S{i + 1}</span>
-                {s.status === "done" && (
-                  <span className="text-foreground/90">
-                    {s.weight} kg × {s.reps}
-                    {s.rir != null && (
-                      <span className="text-muted-foreground"> · RIR {s.rir}</span>
+    <div className="fade-up mt-1 mb-7 ml-2 border-l border-white/12 pt-1 pb-1 pl-5 md:ml-[1.05rem] md:pl-8">
+      <div className={cn("grid gap-x-12 gap-y-7", hist && "md:grid-cols-2")}>
+        {/* Libro de series de hoy */}
+        <section>
+          <div className="flex items-baseline justify-between">
+            <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
+              Series de hoy
+            </p>
+            <p className="font-mono text-[10px] text-muted-foreground/50">
+              obj. {ex.sets}×{sheet(ex.reps)} · RIR {sheet(ex.effort)}
+            </p>
+          </div>
+          <ul className="mt-3 space-y-2.5">
+            {logs.map((s, i) => (
+              <li key={i} className="flex items-center gap-3">
+                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/50">
+                  S{i + 1}
+                </span>
+                <SetTally status={s.status} />
+                <span className="flex-1 font-mono text-[13px]">
+                  {s.status === "done" && (
+                    <span className="text-foreground/90">
+                      {s.weight}
+                      <span className="text-muted-foreground"> kg</span> ×{" "}
+                      {s.reps}
+                      {s.rir != null && (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · RIR {s.rir}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  {s.status === "skipped" && (
+                    <span className="text-muted-foreground italic line-through decoration-muted-foreground/40">
+                      omitida
+                    </span>
+                  )}
+                  {s.status === "pending" && (
+                    <span className="text-muted-foreground/35">
+                      sin registrar
+                    </span>
+                  )}
+                </span>
+                {s.status !== "pending" && (
+                  <span className="flex items-center gap-0.5 text-muted-foreground/40">
+                    <button
+                      type="button"
+                      aria-label={`Resetear serie ${i + 1}`}
+                      className="cursor-pointer rounded p-1 transition-colors hover:text-foreground"
+                    >
+                      <RotateCcw className="size-3" />
+                    </button>
+                    {s.status === "done" && (
+                      <button
+                        type="button"
+                        aria-label={`Marcar serie ${i + 1} como no hecha`}
+                        className="cursor-pointer rounded p-1 transition-colors hover:text-destructive"
+                      >
+                        <X className="size-3" />
+                      </button>
                     )}
                   </span>
                 )}
-                {s.status === "skipped" && (
-                  <span className="text-muted-foreground italic">omitida</span>
-                )}
-                {s.status === "pending" && (
-                  <span className="text-muted-foreground/40">—</span>
-                )}
-              </span>
-              {s.status !== "pending" && (
-                <span className="flex items-center gap-1 text-muted-foreground/50">
-                  {s.status === "done" && (
-                    <span className="mr-1 text-primary">✓</span>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={`Resetear serie ${i + 1}`}
-                    className="cursor-pointer p-0.5 transition-colors hover:text-foreground"
-                  >
-                    <RotateCcw className="size-3" />
-                  </button>
-                  {s.status === "done" && (
-                    <button
-                      type="button"
-                      aria-label={`Marcar serie ${i + 1} como no hecha`}
-                      className="cursor-pointer p-0.5 transition-colors hover:text-destructive"
-                    >
-                      <X className="size-3" />
-                    </button>
-                  )}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Línea de progresión a lo largo del macrociclo */}
+        {hist && <ProgressionRail name={ex.name} />}
       </div>
 
-      {/* Comparación */}
-      {hist && (
-        <div>
-          <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
-            Comparación
-          </p>
-          <dl className="mt-2 max-w-md space-y-1.5 font-mono text-[13px]">
-            {todayDone.length > 0 && (
-              <div className="flex items-baseline justify-between gap-4">
-                <dt className="shrink-0 text-primary">hoy</dt>
-                <dd className="text-right text-foreground/90">
-                  {fmt(todayDone)}
-                </dd>
-              </div>
-            )}
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0 text-muted-foreground">sem. anterior</dt>
-              <dd className="text-right text-foreground/65">
-                {fmt(hist.lastWeek)}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="shrink-0 text-muted-foreground">semana 1</dt>
-              <dd className="text-right text-foreground/65">
-                {fmt(hist.firstWeek)}
-              </dd>
-            </div>
-          </dl>
-          {gain != null && gain > 0 && (
-            <p className="mt-2.5 font-mono text-[12px] text-primary">
-              ↑ +{gain} kg desde la semana 1
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Acciones */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[11px] tracking-[0.16em] uppercase">
+      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 pt-4 font-mono text-[11px] tracking-[0.16em] uppercase">
         <Link
           href="/rutina/entrenar"
           className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/75"
@@ -351,11 +306,11 @@ export function RoutineView() {
     (e) => exerciseState(SESSION.logs[e.name]) === "done"
   ).length
 
-  const hasSuperset = items.some((it) => it.label.letter)
+  const supersetRest = items.find((it) => it.chains)?.ex.rest
   const hasFallo = day.exercises.some((e) => e.effort.includes("fallo"))
 
-  const toggle = (name: string) =>
-    setExpanded((cur) => (cur === name ? null : name))
+  const toggle = (key: string) =>
+    setExpanded((cur) => (cur === key ? null : key))
 
   return (
     <div>
@@ -469,12 +424,11 @@ export function RoutineView() {
 
       {/* Notas de planilla */}
       <div className="mt-2 space-y-1.5 border-t border-white/10 pt-4 font-mono text-[11px] text-muted-foreground/70">
-        {hasSuperset && (
+        {supersetRest && (
           <p>
             <span className="mr-2 text-primary/80">A·B</span>
-            Superserie — los dos seguidos, sin pausa; el descanso (
-            {sheet(items.find((it) => it.chains)?.ex.rest ?? "")}) corre al
-            cerrar cada vuelta.
+            Superserie: van seguidos, sin pausa; el descanso ({sheet(supersetRest)})
+            corre al cerrar cada vuelta.
           </p>
         )}
         {hasFallo && (
