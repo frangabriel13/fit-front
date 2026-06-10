@@ -281,3 +281,12 @@ export function exerciseTrend(name: string): {
   }
   return { label: last != null ? `últ. ${last} kg` : "—", delta: null }
 }
+
+/**
+ * Puntero del modo entrenamiento (mock). Cambiá exerciseName para
+ * previsualizar otra variante (ej. "Abducciones en máquina" → biserie).
+ */
+export const WORKOUT_POSITION = {
+  dayId: "d1",
+  exerciseName: "Peso Muerto Rumano",
+}

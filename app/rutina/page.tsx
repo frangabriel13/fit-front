@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import { AppHeader } from "@/components/layout/app-header"
 import { RoutineView } from "@/components/routine/routine-view"
 import { MACROCYCLE, ROUTINE } from "@/lib/routine-data"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Mi rutina · FitFront",
@@ -33,21 +34,31 @@ export default function RutinaPage() {
             </h1>
           </div>
           <div className="shrink-0 text-right">
-            <span className="rounded-full bg-white/5 px-3 py-1 text-[11px] tracking-wider text-muted-foreground uppercase">
-              {ROUTINE.days.length} días · Semana {MACROCYCLE.week} de{" "}
-              {MACROCYCLE.totalWeeks}
-            </span>
-            <div className="mt-2.5 ml-auto flex w-28 gap-1">
-              {Array.from({ length: MACROCYCLE.totalWeeks }, (_, i) => (
-                <span
-                  key={i}
-                  className={
-                    i < MACROCYCLE.week
-                      ? "h-1 flex-1 rounded-full bg-primary"
-                      : "h-1 flex-1 rounded-full bg-white/10"
-                  }
-                />
-              ))}
+            <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+              {ROUTINE.days.length} días · macrociclo {MACROCYCLE.totalWeeks}{" "}
+              sem.
+            </p>
+            <div className="mt-2 flex items-baseline justify-end gap-2.5 font-mono text-[13px] leading-none">
+              {Array.from({ length: MACROCYCLE.totalWeeks }, (_, i) => {
+                const week = i + 1
+                const current = week === MACROCYCLE.week
+                const past = week < MACROCYCLE.week
+                return (
+                  <span
+                    key={i}
+                    aria-current={current ? "step" : undefined}
+                    className={cn(
+                      "pb-1",
+                      current &&
+                        "text-primary underline decoration-primary decoration-2 underline-offset-4",
+                      past && "text-foreground/80",
+                      !current && !past && "text-muted-foreground/35"
+                    )}
+                  >
+                    {String(week).padStart(2, "0")}
+                  </span>
+                )
+              })}
             </div>
           </div>
         </div>
