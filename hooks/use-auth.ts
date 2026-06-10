@@ -19,7 +19,6 @@ export function useMe() {
 
 export function useLogin() {
   const queryClient = useQueryClient()
-  const router = useRouter()
 
   return useMutation({
     mutationFn: (payload: LoginPayload) =>
@@ -27,7 +26,10 @@ export function useLogin() {
     onSuccess: (data) => {
       setToken(data.accessToken)
       queryClient.setQueryData(queryKeys.auth.me, data.user)
-      router.replace("/")
+      // Navegación dura (no router.replace): garantiza que el proxy/middleware
+      // vea la cookie recién seteada y evita que el router cache de Next sirva
+      // el redirect viejo a /login (que se generó cuando aún no había token).
+      window.location.assign("/")
     },
   })
 }

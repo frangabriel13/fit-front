@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { AxiosError } from "axios"
-import { ArrowRight, Loader2 } from "lucide-react"
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react"
 
 import { loginSchema, type LoginValues } from "@/lib/schemas"
 import { useLogin } from "@/hooks/use-auth"
@@ -21,6 +22,7 @@ import {
 
 export function LoginForm() {
   const login = useLogin()
+  const [showPassword, setShowPassword] = useState(false)
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -73,13 +75,29 @@ export function LoginForm() {
                 Contraseña
               </FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40"
-                  {...field}
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="h-11 border-white/10 bg-white/[0.03] px-3.5 pr-11 placeholder:text-muted-foreground/40"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                    }
+                    className="absolute inset-y-0 right-0 flex cursor-pointer items-center rounded-r-lg px-3 text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

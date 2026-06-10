@@ -9,7 +9,7 @@
 // así que para volver a producción alcanza con NEXT_PUBLIC_USE_MOCKS=false
 // (o borrar lib/mocks/ y el bloque que lo instala en lib/api.ts).
 
-import axios, {
+import {
   AxiosError,
   type AxiosAdapter,
   type AxiosInstance,
@@ -84,8 +84,6 @@ function readAuthHeader(config: InternalAxiosRequestConfig): string {
 }
 
 export function installAuthMock(instance: AxiosInstance): void {
-  const realAdapter = axios.getAdapter(axios.defaults.adapter)
-
   const mockAdapter: AxiosAdapter = async (config) => {
     const url = config.url ?? ""
     const method = (config.method ?? "get").toLowerCase()
@@ -121,8 +119,13 @@ export function installAuthMock(instance: AxiosInstance): void {
       return makeResponse(config, publicUser(user))
     }
 
-    // Resto: backend real (todavía no existe → estas rutas fallarán a propósito).
-    return realAdapter(config)
+    // Resto de rutas: con el mock activo aislamos TODO el frontend del backend.
+    // NO le pegamos a la red — devolvemos una respuesta vacía 200 para que
+    // ninguna llamada no-auth dispare un 401 que cierre la sesión. Cuando exista
+    // el backend real, NEXT_PUBLIC_USE_MOCKS=false y estas rutas irán a la API.
+    await delay(SIMULATED_LATENCY_MS)
+    const empty = method === "get" ? [] : {}
+    return makeResponse(config, empty)
   }
 
   instance.defaults.adapter = mockAdapter
