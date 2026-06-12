@@ -41,7 +41,7 @@ function StatusText({ state }: { state: ExerciseState }) {
   return (
     <span
       className={cn(
-        "mt-0.5 block text-[11px] font-semibold tracking-[0.08em] uppercase",
+        "mt-0.5 block font-label text-[11px] font-medium tracking-[0.12em] uppercase",
         state === "done" && "text-primary",
         state === "in-progress" && "text-ember",
         state === "pending" && "text-muted-foreground/60"
@@ -199,7 +199,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
         {/* Libro de series de hoy */}
         <section>
           <div className="flex items-baseline justify-between">
-            <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+            <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
               Series de hoy
             </p>
             <p className="font-mono text-[10px] text-muted-foreground/70">
@@ -268,7 +268,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
       </div>
 
       {/* Acciones */}
-      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 text-[11px] font-semibold tracking-[0.08em] uppercase">
+      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 font-label text-xs font-medium tracking-[0.12em] uppercase">
         <Link
           href="/rutina/entrenar"
           className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/75"
@@ -363,7 +363,7 @@ export function RoutineView() {
             : "border-border bg-white/[0.02]"
         )}
       >
-        <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+        <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
           {hasSession ? (
             <>
               <span className="mr-2 inline-block size-1.5 animate-pulse rounded-full bg-ember align-middle" />
@@ -389,7 +389,7 @@ export function RoutineView() {
           )}
           <Button
             asChild
-            className="h-9 px-4 text-[11px] font-semibold tracking-[0.08em] uppercase shadow-[0_0_16px_-4px] shadow-primary/50"
+            className="h-9 px-4 font-label text-xs font-medium tracking-[0.12em] uppercase shadow-[0_0_16px_-4px] shadow-primary/50"
           >
             <Link href="/rutina/entrenar">
               <Play className="size-3.5 fill-current" />
@@ -402,7 +402,7 @@ export function RoutineView() {
       {/* Encabezado de columnas (md+) */}
       <div
         className={cn(
-          "hidden border-b border-border pt-6 pb-2 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase",
+          "hidden border-b border-border pt-6 pb-2 font-label text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase",
           COLS
         )}
       >

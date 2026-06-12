@@ -15,6 +15,8 @@ interface SectionCardProps {
   /** Punto focal de la foto (clase object-position de Tailwind). */
   imagePosition?: string
   index: string
+  /** Estado vivo de la sección (ej. sesión en curso): badge ámbar junto al ícono. */
+  status?: string
   className?: string
   /** Delay de la animación de entrada, ej. "120ms". */
   delay?: string
@@ -30,6 +32,7 @@ export function SectionCard({
   imageAlt,
   imagePosition = "object-center",
   index,
+  status,
   className,
   delay = "0ms",
 }: SectionCardProps) {
@@ -77,10 +80,18 @@ export function SectionCard({
         className="absolute inset-0 opacity-[0.05] [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%221%22/></svg>')]"
       />
 
-      {/* Encabezado: badge + numeración editorial */}
+      {/* Encabezado: badge + estado vivo + numeración editorial */}
       <div className="relative flex items-start justify-between">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-background/60 text-primary ring-1 ring-primary/30 backdrop-blur-md transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
-          <Icon className="size-5" />
+        <span className="flex items-center gap-3">
+          <span className="flex size-11 items-center justify-center rounded-xl bg-background/60 text-primary ring-1 ring-primary/30 backdrop-blur-md transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
+            <Icon className="size-5" />
+          </span>
+          {status && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-ember/30 bg-ember/10 px-3 py-1.5 font-label text-[11px] font-medium tracking-[0.12em] text-ember uppercase backdrop-blur-md">
+              <span className="size-1.5 animate-pulse rounded-full bg-ember" />
+              {status}
+            </span>
+          )}
         </span>
         <span className="font-display text-5xl leading-none text-foreground/15 transition-colors duration-500 group-hover:text-primary/40 lg:text-6xl">
           {index}
@@ -89,14 +100,14 @@ export function SectionCard({
 
       {/* Bloque de título + CTA */}
       <div className="relative">
-        <p className="text-[11px] font-semibold tracking-[0.3em] text-primary uppercase">
+        <p className="font-label text-xs font-medium tracking-[0.18em] text-primary uppercase">
           {eyebrow}
         </p>
         <h2 className="mt-2 font-display text-5xl leading-[0.9] uppercase drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)] lg:text-7xl">
           {title}
         </h2>
         <div className="mt-5 flex items-center gap-3">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.18em] text-foreground uppercase">
+          <span className="inline-flex items-center gap-2 font-label text-sm font-medium tracking-[0.12em] text-foreground uppercase">
             {cta}
             <ArrowRight className="size-4 text-primary transition-transform duration-300 group-hover:translate-x-1.5" />
           </span>

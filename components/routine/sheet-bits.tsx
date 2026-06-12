@@ -96,7 +96,7 @@ export function ProgressionRail({ name }: { name: string }) {
 
   return (
     <section>
-      <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+      <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
         Progresión · top set
       </p>
 
@@ -107,7 +107,7 @@ export function ProgressionRail({ name }: { name: string }) {
             <span
               key={n.key}
               className={cn(
-                "text-center text-[10px] font-semibold tracking-[0.08em] uppercase",
+                "text-center font-label text-[10px] font-medium tracking-[0.12em] uppercase",
                 n.today ? "text-primary" : "text-muted-foreground/60"
               )}
             >
