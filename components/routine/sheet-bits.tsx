@@ -67,7 +67,7 @@ export function SetTally({
         status === "done" && "bg-primary",
         status === "skipped" &&
           "bg-[repeating-linear-gradient(45deg,var(--color-muted-foreground)_0_2px,transparent_2px_4px)] opacity-50",
-        status === "pending" && "bg-white/12"
+        status === "pending" && "bg-white/15"
       )}
     />
   )
@@ -96,7 +96,7 @@ export function ProgressionRail({ name }: { name: string }) {
 
   return (
     <section>
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
+      <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
         Progresión · top set
       </p>
 
@@ -107,7 +107,7 @@ export function ProgressionRail({ name }: { name: string }) {
             <span
               key={n.key}
               className={cn(
-                "text-center font-mono text-[9px] tracking-[0.16em] uppercase",
+                "text-center text-[10px] font-semibold tracking-[0.08em] uppercase",
                 n.today ? "text-primary" : "text-muted-foreground/60"
               )}
             >
@@ -147,7 +147,7 @@ export function ProgressionRail({ name }: { name: string }) {
                   className={cn(
                     n.today
                       ? "font-display text-2xl leading-none text-primary"
-                      : "font-mono text-[13px] text-foreground/70"
+                      : "font-mono text-[13px] text-foreground/80"
                   )}
                 >
                   {n.weight}
@@ -162,7 +162,7 @@ export function ProgressionRail({ name }: { name: string }) {
                   </span>
                 </span>
               ) : (
-                <span className="font-mono text-[13px] text-muted-foreground/30">
+                <span className="font-mono text-[13px] text-muted-foreground/50">
                   —
                 </span>
               )}
