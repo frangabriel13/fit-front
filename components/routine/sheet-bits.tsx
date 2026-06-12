@@ -172,7 +172,7 @@ export function ProgressionRail({ name }: { name: string }) {
       </div>
 
       {gain != null && gain > 0 && (
-        <p className="mt-5 inline-flex items-baseline gap-1.5 font-mono text-[11px] text-primary">
+        <p className="mt-5 flex items-baseline justify-center gap-1.5 font-mono text-[11px] text-primary">
           <span className="font-display text-base leading-none">↑ +{gain}</span>
           kg desde la semana 1
         </p>

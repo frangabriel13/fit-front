@@ -195,19 +195,52 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
 
   return (
     <div className="fade-up mt-1 mb-7 ml-2 border-l border-border pt-1 pb-1 pl-5 md:ml-[1.05rem] md:pl-8">
-      <div className={cn("grid gap-x-12 gap-y-7", hist && "md:grid-cols-2")}>
+      <div
+        className={cn(
+          "grid gap-x-10 gap-y-7",
+          hist && "md:grid-cols-[1fr_1fr_2fr]"
+        )}
+      >
+        {/* Espejo de la semana anterior, serie por serie */}
+        {hist && (
+          <section>
+            <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+              Semana anterior
+            </p>
+            <ul className="mt-3 space-y-2.5">
+              {hist.lastWeek.map((s, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/60">
+                    S{i + 1}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="h-5 w-[3px] shrink-0 rounded-full bg-foreground/25"
+                  />
+                  <span className="flex-1 font-mono text-[13px] text-foreground/80">
+                    {s.weight}
+                    <span className="text-muted-foreground"> kg</span> ×{" "}
+                    {s.reps}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* Libro de series de hoy */}
         <section>
-          <div className="flex items-baseline justify-between">
-            <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-              Series de hoy
-            </p>
-            <p className="font-mono text-[10px] text-muted-foreground/70">
-              obj. {ex.sets}×{sheet(ex.reps)} · RIR {sheet(ex.effort)}
-            </p>
-          </div>
+          <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+            Series de hoy
+          </p>
           <ul className="mt-3 space-y-2.5">
-            {logs.map((s, i) => (
+            {logs.map((s, i) => {
+              const prev = hist?.lastWeek[i]
+              const delta =
+                s.status === "done" && s.weight != null && prev
+                  ? s.weight - prev.weight
+                  : null
+              return (
               <li key={i} className="flex items-center gap-3">
                 <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/60">
                   S{i + 1}
@@ -225,6 +258,19 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                           · RIR {s.rir}
                         </span>
                       )}
+                      {delta != null && delta !== 0 && (
+                        <span
+                          className={cn(
+                            "ml-2 text-[11px]",
+                            delta > 0
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {delta > 0 ? "↑" : "↓"} {delta > 0 ? "+" : ""}
+                          {delta}
+                        </span>
+                      )}
                     </span>
                   )}
                   {s.status === "skipped" && (
@@ -238,28 +284,9 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                     </span>
                   )}
                 </span>
-                {s.status !== "pending" && (
-                  <span className="flex items-center gap-0.5 text-muted-foreground/60">
-                    <button
-                      type="button"
-                      aria-label={`Resetear serie ${i + 1}`}
-                      className="cursor-pointer rounded p-1 transition-colors hover:text-foreground"
-                    >
-                      <RotateCcw className="size-3" />
-                    </button>
-                    {s.status === "done" && (
-                      <button
-                        type="button"
-                        aria-label={`Marcar serie ${i + 1} como no hecha`}
-                        className="cursor-pointer rounded p-1 transition-colors hover:text-destructive"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </span>
-                )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         </section>
 
