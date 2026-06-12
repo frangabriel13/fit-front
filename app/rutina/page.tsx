@@ -17,7 +17,7 @@ export default function RutinaPage() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 lg:px-6 lg:py-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-medium tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
           Inicio
@@ -30,7 +30,7 @@ export default function RutinaPage() {
             className="pointer-events-none absolute -top-20 -left-24 size-72 rounded-full bg-primary/[0.08] blur-3xl"
           />
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-primary uppercase">
+            <p className="font-label text-xs font-medium tracking-[0.18em] text-primary uppercase">
               Mi rutina
             </p>
             <h1 className="mt-1 font-display text-4xl leading-none uppercase lg:text-5xl">

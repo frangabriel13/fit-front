@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Barlow, Geist_Mono } from "next/font/google";
+import { Anton, Barlow, Geist_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -20,6 +20,11 @@ const anton = Anton({
   subsets: ["latin"],
 });
 
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "FitFront",
   description: "Tu rutina y modo entrenamiento, pensado para el gym.",
@@ -33,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${barlow.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
+      className={`${barlow.variable} ${geistMono.variable} ${anton.variable} ${oswald.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

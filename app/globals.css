@@ -11,6 +11,7 @@
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-barlow);
   --font-display: var(--font-anton);
+  --font-label: var(--font-oswald);
   --color-ember: var(--ember);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
