@@ -121,7 +121,7 @@ function SheetRow({
     <li>
       <div
         className={cn(
-          "group/row -mx-2 rounded-md px-2 py-3.5 transition-colors hover:bg-white/[0.025]",
+          "group/row -mx-2 rounded-md px-2 py-3.5 transition-colors hover:bg-white/[0.04]",
           COLS
         )}
       >
@@ -141,31 +141,31 @@ function SheetRow({
           <span
             className={cn(
               "block truncate text-[15px] font-medium",
-              state === "done" ? "text-foreground/55" : "text-foreground/95"
+              state === "done" ? "text-muted-foreground" : "text-foreground"
             )}
           >
             {ex.name}
           </span>
           <StatusText state={state} />
-          <span className="mt-1 block font-mono text-[12px] text-muted-foreground md:hidden">
+          <span className="mt-1 block font-mono text-[13px] text-muted-foreground md:hidden">
             {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
             {chains ? "sin pausa →" : sheet(ex.rest)}
           </span>
         </button>
 
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[15px] font-medium text-foreground md:block">
           {ex.sets}
         </span>
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[15px] font-medium text-foreground md:block">
           {sheet(ex.reps)}
         </span>
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[15px] font-medium text-foreground md:block">
           {sheet(ex.effort)}
         </span>
         <span
           className={cn(
-            "hidden text-center font-mono text-[13px] md:block",
-            chains ? "text-primary/70" : "text-foreground/85"
+            "hidden text-center font-mono text-[15px] font-medium md:block",
+            chains ? "text-primary/80" : "text-foreground"
           )}
         >
           {rest}
@@ -194,22 +194,55 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
   const hist = HISTORY[ex.name]
 
   return (
-    <div className="fade-up mt-1 mb-7 ml-2 border-l border-white/12 pt-1 pb-1 pl-5 md:ml-[1.05rem] md:pl-8">
-      <div className={cn("grid gap-x-12 gap-y-7", hist && "md:grid-cols-2")}>
+    <div className="fade-up mt-1 mb-7 ml-2 border-l border-border pt-1 pb-1 pl-5 md:ml-[1.05rem] md:pl-8">
+      <div
+        className={cn(
+          "grid gap-x-10 gap-y-7",
+          hist && "md:grid-cols-[1fr_1fr_2fr]"
+        )}
+      >
+        {/* Espejo de la semana anterior, serie por serie */}
+        {hist && (
+          <section>
+            <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+              Semana anterior
+            </p>
+            <ul className="mt-3 space-y-2.5">
+              {hist.lastWeek.map((s, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/60">
+                    S{i + 1}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="h-5 w-[3px] shrink-0 rounded-full bg-foreground/25"
+                  />
+                  <span className="flex-1 font-mono text-[13px] text-foreground/80">
+                    {s.weight}
+                    <span className="text-muted-foreground"> kg</span> ×{" "}
+                    {s.reps}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* Libro de series de hoy */}
         <section>
-          <div className="flex items-baseline justify-between">
-            <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
-              Series de hoy
-            </p>
-            <p className="font-mono text-[10px] text-muted-foreground/50">
-              obj. {ex.sets}×{sheet(ex.reps)} · RIR {sheet(ex.effort)}
-            </p>
-          </div>
+          <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+            Series de hoy
+          </p>
           <ul className="mt-3 space-y-2.5">
-            {logs.map((s, i) => (
+            {logs.map((s, i) => {
+              const prev = hist?.lastWeek[i]
+              const delta =
+                s.status === "done" && s.weight != null && prev
+                  ? s.weight - prev.weight
+                  : null
+              return (
               <li key={i} className="flex items-center gap-3">
-                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/50">
+                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/60">
                   S{i + 1}
                 </span>
                 <SetTally status={s.status} />
@@ -225,6 +258,19 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                           · RIR {s.rir}
                         </span>
                       )}
+                      {delta != null && delta !== 0 && (
+                        <span
+                          className={cn(
+                            "ml-2 text-[11px]",
+                            delta > 0
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {delta > 0 ? "↑" : "↓"} {delta > 0 ? "+" : ""}
+                          {delta}
+                        </span>
+                      )}
                     </span>
                   )}
                   {s.status === "skipped" && (
@@ -233,33 +279,14 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                     </span>
                   )}
                   {s.status === "pending" && (
-                    <span className="text-muted-foreground/35">
+                    <span className="text-muted-foreground/60">
                       sin registrar
                     </span>
                   )}
                 </span>
-                {s.status !== "pending" && (
-                  <span className="flex items-center gap-0.5 text-muted-foreground/40">
-                    <button
-                      type="button"
-                      aria-label={`Resetear serie ${i + 1}`}
-                      className="cursor-pointer rounded p-1 transition-colors hover:text-foreground"
-                    >
-                      <RotateCcw className="size-3" />
-                    </button>
-                    {s.status === "done" && (
-                      <button
-                        type="button"
-                        aria-label={`Marcar serie ${i + 1} como no hecha`}
-                        className="cursor-pointer rounded p-1 transition-colors hover:text-destructive"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </span>
-                )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         </section>
 
@@ -268,7 +295,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
       </div>
 
       {/* Acciones */}
-      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 pt-4 font-mono text-[11px] tracking-[0.16em] uppercase">
+      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 font-label text-xs font-medium tracking-[0.12em] uppercase">
         <Link
           href="/rutina/entrenar"
           className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/75"
@@ -317,7 +344,7 @@ export function RoutineView() {
   return (
     <div>
       {/* Tabs tipográficos de día */}
-      <nav className="flex gap-7 overflow-x-auto border-b border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="flex gap-7 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {ROUTINE.days.map((d, i) => (
           <button
             key={d.id}
@@ -330,7 +357,7 @@ export function RoutineView() {
             <span
               className={cn(
                 "mr-2 font-mono text-[10px]",
-                i === active ? "text-primary" : "text-muted-foreground/50"
+                i === active ? "text-primary" : "text-muted-foreground/60"
               )}
             >
               {String(d.order).padStart(2, "0")}
@@ -340,7 +367,7 @@ export function RoutineView() {
                 "font-display text-xl tracking-wide uppercase transition-colors",
                 i === active
                   ? "text-foreground"
-                  : "text-muted-foreground/50 hover:text-muted-foreground"
+                  : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
               {d.name}
@@ -353,17 +380,23 @@ export function RoutineView() {
         ))}
       </nav>
 
-      {/* Franja de sesión */}
+      {/* Franja de sesión: ámbar cuando hay entrenamiento en curso */}
       <div
         key={`session-${day.id}`}
-        className="fade-up flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/10 py-4"
+        className={cn(
+          "fade-up mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border px-4 py-3",
+          hasSession
+            ? "border-ember/25 bg-ember/[0.07]"
+            : "border-border bg-white/[0.02]"
+        )}
       >
-        <p className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+        <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
           {hasSession ? (
             <>
-              <span className="mr-2 inline-block size-1.5 rounded-full bg-primary align-middle" />
-              <span className="text-foreground">en curso</span> — {doneCount} de{" "}
-              {day.exercises.length} completados · empezado 18:40
+              <span className="mr-2 inline-block size-1.5 animate-pulse rounded-full bg-ember align-middle" />
+              <span className="text-ember">en curso</span> — {doneCount} de{" "}
+              {day.exercises.length} completados ·{" "}
+              <span className="font-mono font-normal">empezado 18:40</span>
             </>
           ) : (
             <>
@@ -383,7 +416,7 @@ export function RoutineView() {
           )}
           <Button
             asChild
-            className="h-9 px-4 text-[11px] font-semibold tracking-[0.16em] uppercase"
+            className="h-9 px-4 font-label text-xs font-medium tracking-[0.12em] uppercase shadow-[0_0_16px_-4px] shadow-primary/50"
           >
             <Link href="/rutina/entrenar">
               <Play className="size-3.5 fill-current" />
@@ -396,7 +429,7 @@ export function RoutineView() {
       {/* Encabezado de columnas (md+) */}
       <div
         className={cn(
-          "hidden border-b border-white/10 pt-5 pb-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase",
+          "hidden border-b border-border pt-6 pb-2 font-label text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase",
           COLS
         )}
       >
@@ -412,7 +445,7 @@ export function RoutineView() {
       {/* Planilla */}
       <ul
         key={`sheet-${day.id}`}
-        className="fade-up divide-y divide-white/8 [--delay:60ms]"
+        className="fade-up divide-y divide-white/10 [--delay:60ms]"
       >
         {items.map((item) => (
           <SheetRow
@@ -425,7 +458,7 @@ export function RoutineView() {
       </ul>
 
       {/* Notas de planilla */}
-      <div className="mt-2 space-y-1.5 border-t border-white/10 pt-4 font-mono text-[11px] text-muted-foreground/70">
+      <div className="mt-2 space-y-1.5 border-t border-border pt-4 font-mono text-[11px] text-muted-foreground">
         {supersetRest && (
           <p>
             <span className="mr-2 text-primary/80">A·B</span>

@@ -2,8 +2,16 @@ import { LineChart, Dumbbell } from "lucide-react"
 
 import { AppHeader } from "@/components/layout/app-header"
 import { SectionCard } from "@/components/home/section-card"
+import { exerciseState, ROUTINE, SESSION } from "@/lib/routine-data"
 
 export default function DashboardPage() {
+  const sessionDay = ROUTINE.days.find((d) => d.id === SESSION.dayId)
+  const doneCount = sessionDay
+    ? sessionDay.exercises.filter(
+        (e) => exerciseState(SESSION.logs[e.name]) === "done"
+      ).length
+    : 0
+
   return (
     <>
       <AppHeader />

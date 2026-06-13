@@ -3,8 +3,9 @@ import { Anton, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlow = Barlow({
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-barlow",
   subsets: ["latin"],
 });
 
@@ -16,6 +17,11 @@ const geistMono = Geist_Mono({
 const anton = Anton({
   weight: "400",
   variable: "--font-anton",
+  subsets: ["latin"],
+});
+
+const oswald = Oswald({
+  variable: "--font-oswald",
   subsets: ["latin"],
 });
 
@@ -36,7 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
+      className={`${barlow.variable} ${geistMono.variable} ${anton.variable} ${oswald.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
