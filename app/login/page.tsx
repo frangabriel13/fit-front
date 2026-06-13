@@ -22,7 +22,11 @@ export default function LoginPage() {
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_70%_60%_at_30%_20%,black,transparent)]"
+          className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(118deg,transparent_0,transparent_52px,rgba(255,255,255,0.04)_52px,rgba(255,255,255,0.04)_53px)] [mask-image:linear-gradient(118deg,black,transparent_72%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-10 -left-16 h-[2px] w-[160%] origin-left rotate-[28deg] bg-gradient-to-r from-primary/50 via-primary/15 to-transparent blur-[1px]"
         />
 
         <header className="fade-up relative flex items-center gap-2.5">
@@ -62,8 +66,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="fade-up [--delay:200ms]">
             <p className="font-mono text-[10px] font-semibold tracking-[0.25em] text-primary uppercase">
-              <span className="text-muted-foreground/50">01 /</span> Acceso
-              privado
+              Acceso privado
             </p>
             <h2 className="mt-2 font-display text-3xl leading-none uppercase">
               Iniciar sesión
