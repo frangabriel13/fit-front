@@ -35,7 +35,7 @@ export default function LoginPage() {
         </header>
 
         <div className="relative">
-          <p className="fade-up mb-6 text-xs font-medium tracking-[0.3em] text-primary uppercase [--delay:100ms]">
+          <p className="fade-up mb-6 font-mono text-[11px] font-medium tracking-[0.3em] text-primary uppercase [--delay:100ms]">
             Tu entrenamiento, en serio
           </p>
           <h1 className="font-display text-6xl leading-[0.95] uppercase sm:text-7xl xl:text-8xl">
@@ -61,13 +61,14 @@ export default function LoginPage() {
       <section className="relative flex flex-1 items-center justify-center border-t border-white/10 bg-card/40 px-6 py-14 lg:border-t-0 lg:border-l lg:px-10">
         <div className="w-full max-w-sm">
           <div className="fade-up [--delay:200ms]">
-            <p className="text-[11px] font-semibold tracking-[0.25em] text-primary uppercase">
-              Acceso privado
+            <p className="font-mono text-[10px] font-semibold tracking-[0.25em] text-primary uppercase">
+              <span className="text-muted-foreground/50">01 /</span> Acceso
+              privado
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            <h2 className="mt-2 font-display text-3xl leading-none uppercase">
               Iniciar sesión
             </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground">
               Entrá con el email y la contraseña que te asignaron.
             </p>
           </div>
