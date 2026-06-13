@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Anton, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -22,6 +22,10 @@ const anton = Anton({
 export const metadata: Metadata = {
   title: "FitFront",
   description: "Tu rutina y modo entrenamiento, pensado para el gym.",
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
