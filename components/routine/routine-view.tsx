@@ -32,7 +32,7 @@ function numClass(state: ExerciseState): string {
     "font-display text-lg leading-none",
     state === "done" && "text-primary",
     state === "in-progress" &&
-      "text-foreground underline decoration-primary decoration-2 underline-offset-4",
+      "text-foreground underline decoration-ember decoration-2 underline-offset-4",
     state === "pending" && "text-muted-foreground/50"
   )
 }
@@ -42,7 +42,9 @@ function StatusText({ state }: { state: ExerciseState }) {
     <span
       className={cn(
         "mt-0.5 block font-mono text-[10px] tracking-[0.14em] uppercase",
-        state === "pending" ? "text-muted-foreground/50" : "text-primary"
+        state === "done" && "text-primary",
+        state === "in-progress" && "text-ember",
+        state === "pending" && "text-muted-foreground/50"
       )}
     >
       {state === "done"
@@ -77,7 +79,7 @@ function RowActions({
         className={cn(
           "flex size-7 items-center justify-center rounded-md border transition-colors",
           state === "in-progress"
-            ? "border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground"
+            ? "border-ember/50 text-ember hover:bg-ember hover:text-background"
             : "border-white/12 text-muted-foreground hover:border-primary/50 hover:text-primary"
         )}
       >

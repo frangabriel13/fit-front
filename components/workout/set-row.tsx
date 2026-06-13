@@ -28,7 +28,7 @@ export function SetRow({
     <div
       className={cn(
         "grid grid-cols-[1.5rem_1fr_1fr_1fr_auto] items-center gap-2 rounded-md border p-2",
-        value.completed && "border-green-600/40 bg-green-600/5"
+        value.completed && "border-primary/40 bg-primary/5"
       )}
     >
       <span className="text-center text-sm font-medium text-muted-foreground">

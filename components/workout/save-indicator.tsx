@@ -46,7 +46,7 @@ export function SaveIndicator({
     saved: {
       label: "Guardado",
       icon: <Check className="size-3.5" />,
-      className: "text-green-600",
+      className: "text-primary",
     },
   }
 

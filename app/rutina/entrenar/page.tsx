@@ -234,7 +234,7 @@ export default function EntrenarPage() {
                 current &&
                   "text-foreground underline decoration-primary decoration-2 underline-offset-4",
                 !current && st === "done" && "text-primary",
-                !current && st === "in-progress" && "text-foreground/70",
+                !current && st === "in-progress" && "text-ember",
                 !current && st === "pending" && "text-muted-foreground/35"
               )}
             >
