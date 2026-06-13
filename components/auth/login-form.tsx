@@ -77,7 +77,7 @@ export function LoginForm() {
                   autoComplete="email"
                   autoFocus
                   placeholder="vos@email.com"
-                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40"
+                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
                   {...field}
                   onChange={(e) => {
                     setAuthError(null)
@@ -114,7 +114,7 @@ export function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    className="h-11 border-white/10 bg-white/[0.03] px-3.5 pr-11 placeholder:text-muted-foreground/40"
+                    className="h-11 border-white/10 bg-white/[0.03] px-3.5 pr-11 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
                     {...field}
                     onChange={(e) => {
                       setAuthError(null)
@@ -137,7 +137,7 @@ export function LoginForm() {
                     aria-label={
                       showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                     }
-                    className="absolute inset-y-0 right-0 flex cursor-pointer items-center rounded-r-lg px-3 text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:text-foreground"
+                    className="absolute inset-y-0 right-0 flex cursor-pointer items-center rounded-r-lg px-3 text-[oklch(0.55_0.06_248)] transition-colors outline-none hover:text-[oklch(0.7_0.08_244)] focus-visible:text-[oklch(0.7_0.08_244)]"
                   >
                     {showPassword ? (
                       <EyeOff className="size-4" />
