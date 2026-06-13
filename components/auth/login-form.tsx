@@ -3,9 +3,15 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { toast } from "sonner"
 import { AxiosError } from "axios"
-import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react"
+import {
+  ArrowBigUp,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react"
 
 import { loginSchema, type LoginValues } from "@/lib/schemas"
 import { useLogin } from "@/hooks/use-auth"
@@ -23,16 +29,19 @@ import {
 export function LoginForm() {
   const login = useLogin()
   const [showPassword, setShowPassword] = useState(false)
+  const [capsLock, setCapsLock] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   })
 
   function onSubmit(values: LoginValues) {
+    setAuthError(null)
     login.mutate(values, {
       onError: (error) => {
         const status = (error as AxiosError).response?.status
-        toast.error(
+        setAuthError(
           status === 401
             ? "Email o contraseña incorrectos."
             : "No se pudo iniciar sesión. Probá de nuevo."
@@ -44,6 +53,15 @@ export function LoginForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {authError && (
+          <div
+            role="alert"
+            className="fade-up flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3.5 py-3 text-destructive [--delay:0ms]"
+          >
+            <TriangleAlert className="mt-px size-4 shrink-0" />
+            <p className="text-[13px] leading-snug">{authError}</p>
+          </div>
+        )}
         <FormField
           control={form.control}
           name="email"
@@ -57,9 +75,14 @@ export function LoginForm() {
                   type="email"
                   inputMode="email"
                   autoComplete="email"
+                  autoFocus
                   placeholder="vos@email.com"
                   className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40"
                   {...field}
+                  onChange={(e) => {
+                    setAuthError(null)
+                    field.onChange(e)
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -71,9 +94,20 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                Contraseña
-              </FormLabel>
+              <div className="flex items-center justify-between gap-2">
+                <FormLabel className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+                  Contraseña
+                </FormLabel>
+                {capsLock && (
+                  <span
+                    role="status"
+                    className="flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ember uppercase"
+                  >
+                    <ArrowBigUp className="size-3" />
+                    Mayús activado
+                  </span>
+                )}
+              </div>
               <FormControl>
                 <div className="relative">
                   <Input
@@ -82,6 +116,20 @@ export function LoginForm() {
                     placeholder="••••••••"
                     className="h-11 border-white/10 bg-white/[0.03] px-3.5 pr-11 placeholder:text-muted-foreground/40"
                     {...field}
+                    onChange={(e) => {
+                      setAuthError(null)
+                      field.onChange(e)
+                    }}
+                    onKeyUp={(e) =>
+                      setCapsLock(e.getModifierState("CapsLock"))
+                    }
+                    onKeyDown={(e) =>
+                      setCapsLock(e.getModifierState("CapsLock"))
+                    }
+                    onBlur={() => {
+                      setCapsLock(false)
+                      field.onBlur()
+                    }}
                   />
                   <button
                     type="button"
