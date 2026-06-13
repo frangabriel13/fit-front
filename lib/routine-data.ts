@@ -283,8 +283,8 @@ export function exerciseTrend(name: string): {
 }
 
 /**
- * Puntero del modo entrenamiento (mock). Cambiá exerciseName para
- * previsualizar otra variante (ej. "Abducciones en máquina" → biserie).
+ * @deprecated El modo entrenamiento (train-view) ahora deriva su posición
+ * del estado client (primer slot/serie pendiente). Sin usos.
  */
 export const WORKOUT_POSITION = {
   dayId: "d1",
