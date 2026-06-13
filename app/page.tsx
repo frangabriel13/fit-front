@@ -7,7 +7,7 @@ export default function DashboardPage() {
   return (
     <>
       <AppHeader />
-      <main className="flex flex-1 flex-col lg:flex-row">
+      <main className="group/home flex flex-1 flex-col lg:flex-row">
         <SectionCard
           href="/progreso"
           eyebrow="Seguimiento"
@@ -18,6 +18,7 @@ export default function DashboardPage() {
           imageAlt="Personas entrenando en cintas de correr en el gimnasio"
           imagePosition="object-[45%_52%]"
           index="01"
+          accent="ember"
         />
         <SectionCard
           href="/rutina"
@@ -29,6 +30,7 @@ export default function DashboardPage() {
           imageAlt="Entrenando en el gimnasio"
           imagePosition="object-[50%_92%]"
           index="02"
+          accent="primary"
           className="border-t border-white/10 lg:border-t-0 lg:border-l"
           delay="120ms"
         />

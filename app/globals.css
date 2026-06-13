@@ -159,8 +159,31 @@
   }
 }
 
+@layer utilities {
+  /* Reveal en cortina (de arriba hacia abajo) para las cards del home. */
+  .reveal-card {
+    animation: reveal-card 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--delay, 0s);
+  }
+}
+
+@keyframes reveal-card {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fade-up {
+  .fade-up,
+  .reveal-card {
     animation: none;
+    clip-path: none;
   }
 }
