@@ -75,7 +75,6 @@ export function LoginForm() {
                   type="email"
                   inputMode="email"
                   autoComplete="email"
-                  autoFocus
                   placeholder="vos@email.com"
                   className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
                   {...field}
@@ -101,7 +100,7 @@ export function LoginForm() {
                 {capsLock && (
                   <span
                     role="status"
-                    className="flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ember uppercase"
+                    className="hidden items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ember uppercase sm:flex"
                   >
                     <ArrowBigUp className="size-3" />
                     Mayús activado

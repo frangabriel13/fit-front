@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Anton, Barlow, Geist_Mono, Oswald } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Anton, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -28,6 +28,10 @@ const oswald = Oswald({
 export const metadata: Metadata = {
   title: "FitFront",
   description: "Tu rutina y modo entrenamiento, pensado para el gym.",
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
