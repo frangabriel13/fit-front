@@ -115,8 +115,8 @@ export function ProgressionRail({
             <span
               key={n.key}
               className={cn(
-                "text-center font-label text-[10px] font-medium tracking-[0.12em] uppercase",
-                n.today ? "text-primary" : "text-muted-foreground/60"
+                "text-center font-mono text-[9px] tracking-[0.16em] uppercase",
+                n.today ? "text-primary" : "text-muted-foreground/80"
               )}
             >
               {n.label}
@@ -170,7 +170,7 @@ export function ProgressionRail({
                   </span>
                 </span>
               ) : (
-                <span className="font-mono text-[13px] text-muted-foreground/50">
+                <span className="font-mono text-[13px] text-muted-foreground/40">
                   —
                 </span>
               )}
