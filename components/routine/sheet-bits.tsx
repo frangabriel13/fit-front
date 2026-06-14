@@ -8,6 +8,7 @@ import {
   SESSION,
   topWeight,
   type RoutineExercise,
+  type SetEntry,
 } from "@/lib/routine-data"
 import { cn } from "@/lib/utils"
 
@@ -77,11 +78,18 @@ export function SetTally({
 
 // ─── riel de progresión: Sem 1 → Sem. ant. → Hoy ────────────────────────────
 
-export function ProgressionRail({ name }: { name: string }) {
+export function ProgressionRail({
+  name,
+  todayLogs,
+}: {
+  name: string
+  /** Logs vivos del modo entrenamiento; sin esto cae al mock SESSION. */
+  todayLogs?: SetEntry[]
+}) {
   const hist = HISTORY[name]
   if (!hist) return null
 
-  const todayDone = (SESSION.logs[name] ?? []).filter(
+  const todayDone = (todayLogs ?? SESSION.logs[name] ?? []).filter(
     (s) => s.status === "done"
   )
   const todayTop = todayDone.length ? topWeight(todayDone) : null
@@ -154,7 +162,7 @@ export function ProgressionRail({ name }: { name: string }) {
                   className={cn(
                     n.today
                       ? "font-display text-2xl leading-none text-primary"
-                      : "font-mono text-[13px] text-foreground/70"
+                      : "font-mono text-[13px] text-foreground/80"
                   )}
                 >
                   {n.weight}

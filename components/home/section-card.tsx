@@ -110,7 +110,7 @@ export function SectionCard({
         className="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/12 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full"
       />
 
-      {/* Encabezado: badge + numeración editorial */}
+      {/* Encabezado: badge + estado vivo + numeración editorial */}
       <div className="relative flex items-start justify-between">
         <span
           className={cn(
@@ -146,7 +146,7 @@ export function SectionCard({
           {title}
         </h2>
         <div className="mt-5 flex items-center gap-3">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.18em] text-foreground uppercase">
+          <span className="inline-flex items-center gap-2 font-label text-sm font-medium tracking-[0.12em] text-foreground uppercase">
             {cta}
             <ArrowRight
               className={cn(

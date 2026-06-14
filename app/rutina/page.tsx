@@ -5,7 +5,6 @@ import { ArrowLeft } from "lucide-react"
 import { AppHeader } from "@/components/layout/app-header"
 import { RoutineView } from "@/components/routine/routine-view"
 import { MACROCYCLE, ROUTINE } from "@/lib/routine-data"
-import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Mi rutina · FitFront",
@@ -18,7 +17,7 @@ export default function RutinaPage() {
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 lg:px-6 lg:py-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-medium tracking-wider text-muted-foreground uppercase transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-2 font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
           Inicio
