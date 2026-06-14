@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ChevronDown, Play, RotateCcw, X } from "lucide-react"
+import { Play, RotateCcw, X } from "lucide-react"
 
 import {
   exerciseState,
@@ -77,21 +77,18 @@ function StatusText({ state }: { state: ExerciseState }) {
 function RowActions({
   name,
   state,
-  expanded,
-  onToggle,
   className,
 }: {
   name: string
   state: ExerciseState
-  expanded: boolean
-  onToggle: () => void
   className?: string
 }) {
   return (
-    <span className={cn("flex items-center justify-end gap-1", className)}>
+    <span className={cn("flex items-center justify-end", className)}>
       <Link
         href="/rutina/entrenar"
         aria-label={`Entrenar ${name}`}
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           "flex size-10 items-center justify-center rounded-xl border transition-colors md:size-9",
           state === "in-progress"
@@ -101,20 +98,6 @@ function RowActions({
       >
         <Play className="size-3.5 fill-current" />
       </Link>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label="Ver detalle"
-        aria-expanded={expanded}
-        className="flex size-10 cursor-pointer items-center justify-center rounded-xl text-muted-foreground/70 transition-colors hover:bg-white/[0.04] hover:text-foreground md:size-9"
-      >
-        <ChevronDown
-          className={cn(
-            "size-4 transition-transform duration-300",
-            expanded && "rotate-180"
-          )}
-        />
-      </button>
     </span>
   )
 }
@@ -140,15 +123,23 @@ function SheetRow({
         expanded ? "border-white/15 bg-card/60" : "border-white/8 hover:border-white/15"
       )}
     >
-      <div className={cn("px-3 py-3 md:px-4", COLS)}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault()
+            onToggle()
+          }
+        }}
+        aria-expanded={expanded}
+        aria-label={`Ver detalle de ${ex.name}`}
+        className={cn("cursor-pointer px-3 py-3 outline-none md:px-4", COLS)}
+      >
         <NumberChip num={num} letter={letter} state={state} />
 
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          className="mt-2 min-w-0 cursor-pointer text-left outline-none md:mt-0"
-        >
+        <div className="mt-2 min-w-0 md:mt-0">
           <span
             className={cn(
               "block truncate text-[15px] font-medium",
@@ -162,7 +153,7 @@ function SheetRow({
             {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
             {chains ? "sin pausa →" : sheet(ex.rest)}
           </span>
-        </button>
+        </div>
 
         <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
           {ex.sets}
@@ -182,13 +173,7 @@ function SheetRow({
           {chains ? "→" : sheet(ex.rest)}
         </span>
 
-        <RowActions
-          name={ex.name}
-          state={state}
-          expanded={expanded}
-          onToggle={onToggle}
-          className="mt-2 md:mt-0"
-        />
+        <RowActions name={ex.name} state={state} className="mt-2 md:mt-0" />
       </div>
 
       {expanded && <RowDetail ex={ex} />}
