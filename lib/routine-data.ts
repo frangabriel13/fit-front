@@ -168,6 +168,8 @@ export const SESSION: {
 export interface HistSet {
   weight: number
   reps: number
+  /** RIR / esfuerzo real registrado en esa serie. */
+  rir: number
 }
 
 /** Historial por ejercicio: semana pasada y Semana 1 del macrociclo (6 sem). */
@@ -177,74 +179,74 @@ export const HISTORY: Record<
 > = {
   "Hip Thrust": {
     lastWeek: [
-      { weight: 57.5, reps: 12 },
-      { weight: 57.5, reps: 11 },
-      { weight: 57.5, reps: 10 },
+      { weight: 57.5, reps: 12, rir: 1 },
+      { weight: 57.5, reps: 11, rir: 1 },
+      { weight: 57.5, reps: 10, rir: 0 },
     ],
     firstWeek: [
-      { weight: 50, reps: 12 },
-      { weight: 50, reps: 10 },
-      { weight: 50, reps: 10 },
+      { weight: 50, reps: 12, rir: 2 },
+      { weight: 50, reps: 10, rir: 1 },
+      { weight: 50, reps: 10, rir: 1 },
     ],
   },
   "Peso Muerto Rumano": {
     lastWeek: [
-      { weight: 67.5, reps: 12 },
-      { weight: 67.5, reps: 11 },
-      { weight: 67.5, reps: 10 },
+      { weight: 67.5, reps: 12, rir: 1 },
+      { weight: 67.5, reps: 11, rir: 1 },
+      { weight: 67.5, reps: 10, rir: 0 },
     ],
     firstWeek: [
-      { weight: 60, reps: 12 },
-      { weight: 60, reps: 11 },
-      { weight: 60, reps: 10 },
+      { weight: 60, reps: 12, rir: 2 },
+      { weight: 60, reps: 11, rir: 1 },
+      { weight: 60, reps: 10, rir: 1 },
     ],
   },
   "Prensa 45°": {
     lastWeek: [
-      { weight: 115, reps: 12 },
-      { weight: 115, reps: 11 },
-      { weight: 115, reps: 10 },
+      { weight: 115, reps: 12, rir: 1 },
+      { weight: 115, reps: 11, rir: 1 },
+      { weight: 115, reps: 10, rir: 0 },
     ],
     firstWeek: [
-      { weight: 100, reps: 12 },
-      { weight: 100, reps: 10 },
-      { weight: 100, reps: 10 },
+      { weight: 100, reps: 12, rir: 2 },
+      { weight: 100, reps: 10, rir: 1 },
+      { weight: 100, reps: 10, rir: 1 },
     ],
   },
   "Abducciones en máquina": {
     lastWeek: [
-      { weight: 45, reps: 15 },
-      { weight: 45, reps: 13 },
-      { weight: 45, reps: 12 },
+      { weight: 45, reps: 15, rir: 0 },
+      { weight: 45, reps: 13, rir: 0 },
+      { weight: 45, reps: 12, rir: 0 },
     ],
     firstWeek: [
-      { weight: 35, reps: 15 },
-      { weight: 35, reps: 12 },
-      { weight: 35, reps: 11 },
+      { weight: 35, reps: 15, rir: 1 },
+      { weight: 35, reps: 12, rir: 1 },
+      { weight: 35, reps: 11, rir: 0 },
     ],
   },
   "Adducciones en máquina": {
     lastWeek: [
-      { weight: 40, reps: 15 },
-      { weight: 40, reps: 14 },
-      { weight: 40, reps: 12 },
+      { weight: 40, reps: 15, rir: 0 },
+      { weight: 40, reps: 14, rir: 0 },
+      { weight: 40, reps: 12, rir: 0 },
     ],
     firstWeek: [
-      { weight: 30, reps: 15 },
-      { weight: 30, reps: 13 },
-      { weight: 30, reps: 12 },
+      { weight: 30, reps: 15, rir: 1 },
+      { weight: 30, reps: 13, rir: 1 },
+      { weight: 30, reps: 12, rir: 0 },
     ],
   },
   "Extensión de cuádriceps": {
     lastWeek: [
-      { weight: 32.5, reps: 12 },
-      { weight: 32.5, reps: 11 },
-      { weight: 32.5, reps: 10 },
+      { weight: 32.5, reps: 12, rir: 0 },
+      { weight: 32.5, reps: 11, rir: 0 },
+      { weight: 32.5, reps: 10, rir: 0 },
     ],
     firstWeek: [
-      { weight: 25, reps: 12 },
-      { weight: 25, reps: 11 },
-      { weight: 25, reps: 10 },
+      { weight: 25, reps: 12, rir: 1 },
+      { weight: 25, reps: 11, rir: 1 },
+      { weight: 25, reps: 10, rir: 0 },
     ],
   },
 }

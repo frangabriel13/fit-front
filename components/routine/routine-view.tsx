@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Play, RotateCcw, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Minus, Play, RotateCcw, X } from "lucide-react"
 
 import {
   exerciseState,
@@ -10,12 +10,13 @@ import {
   ROUTINE,
   SESSION,
   type ExerciseState,
+  type HistSet,
   type RoutineExercise,
+  type SetEntry,
 } from "@/lib/routine-data"
 // (piezas compartidas de planilla en sheet-bits)
 import {
   ProgressionRail,
-  SetTally,
   sheet,
   toSheetItems,
   type SheetItem,
@@ -181,6 +182,60 @@ function SheetRow({
   )
 }
 
+// ─── comparación de una serie contra la semana anterior ────────────────────
+
+type Delta = { dir: "up" | "down" | "flat"; value: string; unit: string }
+
+/** Progreso de una serie: prioriza el salto de peso; si empató, mira reps. */
+function setDelta(today: SetEntry, prev?: HistSet): Delta | null {
+  if (!prev || today.weight == null) return null
+  const dw = Math.round((today.weight - prev.weight) * 10) / 10
+  if (dw !== 0)
+    return { dir: dw > 0 ? "up" : "down", value: `${dw > 0 ? "+" : ""}${dw}`, unit: "kg" }
+  const dr = (today.reps ?? 0) - prev.reps
+  if (dr !== 0)
+    return {
+      dir: dr > 0 ? "up" : "down",
+      value: `${dr > 0 ? "+" : ""}${dr}`,
+      unit: Math.abs(dr) === 1 ? "rep" : "reps",
+    }
+  return { dir: "flat", value: "igual", unit: "" }
+}
+
+function DeltaChip({ d }: { d: Delta }) {
+  const Icon = d.dir === "up" ? ArrowUp : d.dir === "down" ? ArrowDown : Minus
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums",
+        d.dir === "up" && "bg-primary/12 text-primary",
+        d.dir === "down" && "bg-white/[0.05] text-muted-foreground",
+        d.dir === "flat" && "bg-white/[0.05] text-muted-foreground/70"
+      )}
+    >
+      <Icon className="size-2.5" strokeWidth={2.5} />
+      {d.value}
+      {d.unit && <span className="opacity-70">{d.unit}</span>}
+    </span>
+  )
+}
+
+/** Nodo con el número de serie, coloreado por estado. */
+function SetNode({ n, status }: { n: number; status: SetEntry["status"] }) {
+  return (
+    <span
+      className={cn(
+        "grid size-6 place-items-center rounded-full font-mono text-[10px] tabular-nums ring-1 ring-inset",
+        status === "done" && "bg-primary/10 text-primary ring-primary/30",
+        status === "skipped" && "text-muted-foreground/60 ring-white/10",
+        status === "pending" && "text-muted-foreground/40 ring-white/8"
+      )}
+    >
+      {n}
+    </span>
+  )
+}
+
 // ─── detalle expandido: series de hoy, comparación, acciones ────────────────
 
 function RowDetail({ ex }: { ex: RoutineExercise }) {
@@ -189,73 +244,102 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
     Array.from({ length: ex.sets }, () => ({ status: "pending" as const }))
   const hist = HISTORY[ex.name]
 
+  const doneCount = logs.filter((s) => s.status === "done").length
+
   return (
-    <div className="fade-up border-t border-white/8 bg-white/[0.015] px-4 pt-5 pb-5 md:px-5">
-      <div className={cn("grid gap-x-12 gap-y-7", hist && "md:grid-cols-2")}>
-        {/* Libro de series de hoy */}
+    <div className="fade-up border-t border-white/8 bg-white/[0.02] p-5 md:p-6">
+      <div className={cn("grid gap-x-10 gap-y-8", hist && "md:grid-cols-2")}>
+        {/* Comparación serie a serie: hoy vs. semana anterior */}
         <section>
-          <div className="flex items-baseline justify-between">
-            <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
-              Series de hoy
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <p className="font-mono text-[10px] tracking-[0.24em] text-primary/90 uppercase">
+              Registro de hoy
             </p>
-            <p className="font-mono text-[10px] text-muted-foreground/70">
-              obj. {ex.sets}×{sheet(ex.reps)} · RIR {sheet(ex.effort)}
+            <p className="font-mono text-[10px] text-muted-foreground/55">
+              {doneCount}/{logs.length} series · obj. {ex.sets}×{sheet(ex.reps)}{" "}
+              · RIR {sheet(ex.effort)}
             </p>
           </div>
-          <ul className="mt-3 space-y-2.5">
-            {logs.map((s, i) => (
-              <li key={i} className="flex items-center gap-3">
-                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/70">
-                  S{i + 1}
-                </span>
-                <SetTally status={s.status} />
-                <span className="flex-1 font-mono text-[13px]">
-                  {s.status === "done" && (
-                    <span className="text-foreground/90">
-                      {s.weight}
-                      <span className="text-muted-foreground"> kg</span> ×{" "}
-                      {s.reps}
-                      {s.rir != null && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · RIR {s.rir}
+
+          {/* Sub-encabezados de columna */}
+          <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-x-5 border-b border-white/8 pb-2">
+            <span aria-hidden />
+            <p className="font-mono text-[9px] tracking-[0.2em] text-foreground/55 uppercase">
+              Hoy
+            </p>
+            <p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground/45 uppercase">
+              Sem. anterior
+            </p>
+          </div>
+
+          <ul className="mt-1">
+            {logs.map((s, i) => {
+              const prev = hist?.lastWeek[i]
+              const delta = s.status === "done" ? setDelta(s, prev) : null
+              return (
+                <li
+                  key={i}
+                  className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-5 rounded-lg py-2 transition-colors hover:bg-white/[0.025]"
+                >
+                  <SetNode n={i + 1} status={s.status} />
+
+                  {/* Columna: hoy + chip de progreso pegado al borde (gutter central) */}
+                  {s.status === "done" ? (
+                    <span className="flex items-center gap-2 font-mono">
+                      <span className="grid grid-cols-[2rem_auto] items-baseline gap-x-1.5">
+                        <span className="text-right text-[14px] leading-none tabular-nums text-foreground">
+                          {s.weight}
+                        </span>
+                        <span className="flex items-baseline gap-1.5">
+                          <span className="text-[13px] text-muted-foreground/70">
+                            × {s.reps}
+                          </span>
+                          {s.rir != null && (
+                            <span className="text-[10px] tracking-[0.06em] text-muted-foreground/50">
+                              RIR {s.rir}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      {delta && (
+                        <span className="ml-auto pr-1">
+                          <DeltaChip d={delta} />
                         </span>
                       )}
                     </span>
-                  )}
-                  {s.status === "skipped" && (
-                    <span className="text-muted-foreground italic line-through decoration-muted-foreground/40">
+                  ) : s.status === "skipped" ? (
+                    <span className="font-mono text-[13px] text-muted-foreground italic line-through decoration-muted-foreground/40">
                       omitida
                     </span>
-                  )}
-                  {s.status === "pending" && (
-                    <span className="text-muted-foreground/50">
-                      sin registrar
+                  ) : (
+                    <span className="font-mono text-[13px] text-muted-foreground/45">
+                      pendiente
                     </span>
                   )}
-                </span>
-                {s.status !== "pending" && (
-                  <span className="flex items-center gap-0.5 text-muted-foreground/50">
-                    <button
-                      type="button"
-                      aria-label={`Resetear serie ${i + 1}`}
-                      className="cursor-pointer rounded p-1 transition-colors hover:text-foreground"
-                    >
-                      <RotateCcw className="size-3" />
-                    </button>
-                    {s.status === "done" && (
-                      <button
-                        type="button"
-                        aria-label={`Marcar serie ${i + 1} como no hecha`}
-                        className="cursor-pointer rounded p-1 transition-colors hover:text-destructive"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </span>
-                )}
-              </li>
-            ))}
+
+                  {/* Columna: semana anterior (referencia tenue) */}
+                  {prev ? (
+                    <span className="grid grid-cols-[2rem_auto] items-baseline gap-x-1.5 font-mono">
+                      <span className="text-right text-[13px] leading-none tabular-nums text-muted-foreground/80">
+                        {prev.weight}
+                      </span>
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[12px] text-muted-foreground/55">
+                          × {prev.reps}
+                        </span>
+                        <span className="text-[10px] tracking-[0.06em] text-muted-foreground/40">
+                          RIR {prev.rir}
+                        </span>
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[13px] text-muted-foreground/30">
+                      —
+                    </span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </section>
 
@@ -263,25 +347,25 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
         {hist && <ProgressionRail name={ex.name} />}
       </div>
 
-      {/* Acciones */}
-      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 pt-4 font-mono text-[11px] tracking-[0.16em] uppercase">
+      {/* Acciones: primaria + secundarias, con la destructiva apartada */}
+      <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-white/8 pt-4">
         <Link
           href="/rutina/entrenar"
-          className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/75"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 font-mono text-[11px] font-semibold tracking-[0.14em] text-primary-foreground uppercase shadow-[0_8px_24px_-12px] shadow-primary/60 transition-colors hover:bg-primary/90"
         >
           <Play className="size-3 fill-current" />
           Entrenar
         </Link>
         <button
           type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:bg-white/[0.05] hover:text-foreground"
         >
           <RotateCcw className="size-3" />
           Reiniciar
         </button>
         <button
           type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground transition-colors hover:text-destructive"
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground/70 uppercase transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <X className="size-3" />
           No realizado
