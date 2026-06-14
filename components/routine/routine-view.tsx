@@ -207,10 +207,10 @@ function DeltaChip({ d }: { d: Delta }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums",
-        d.dir === "up" && "bg-primary/12 text-primary",
-        d.dir === "down" && "bg-white/[0.05] text-muted-foreground",
-        d.dir === "flat" && "bg-white/[0.05] text-muted-foreground/70"
+        "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums",
+        d.dir === "up" && "bg-primary/15 text-primary",
+        d.dir === "down" && "bg-ember/15 text-ember",
+        d.dir === "flat" && "bg-secondary text-muted-foreground"
       )}
     >
       <Icon className="size-2.5" strokeWidth={2.5} />
@@ -225,10 +225,10 @@ function SetNode({ n, status }: { n: number; status: SetEntry["status"] }) {
   return (
     <span
       className={cn(
-        "grid size-6 place-items-center rounded-full font-mono text-[10px] tabular-nums ring-1 ring-inset",
-        status === "done" && "bg-primary/10 text-primary ring-primary/30",
-        status === "skipped" && "text-muted-foreground/60 ring-white/10",
-        status === "pending" && "text-muted-foreground/40 ring-white/8"
+        "grid size-7 place-items-center rounded-lg font-mono text-[11px] font-medium tabular-nums ring-1 ring-inset",
+        status === "done" && "bg-primary/15 text-primary ring-primary/35",
+        status === "skipped" && "bg-secondary text-muted-foreground/70 ring-border",
+        status === "pending" && "bg-secondary/50 text-muted-foreground/50 ring-border/60"
       )}
     >
       {n}
@@ -237,6 +237,15 @@ function SetNode({ n, status }: { n: number; status: SetEntry["status"] }) {
 }
 
 // ─── detalle expandido: series de hoy, comparación, acciones ────────────────
+
+/** Chip de especificación del objetivo (lee como ficha de producto). */
+function Spec({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-md bg-secondary/70 px-2 py-1 font-mono text-[11px] tabular-nums text-foreground/85">
+      {children}
+    </span>
+  )
+}
 
 function RowDetail({ ex }: { ex: RoutineExercise }) {
   const logs =
@@ -247,108 +256,128 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
   const doneCount = logs.filter((s) => s.status === "done").length
 
   return (
-    <div className="fade-up border-t border-white/8 bg-white/[0.02] p-5 md:p-6">
-      <div className={cn("grid gap-x-10 gap-y-8", hist && "md:grid-cols-2")}>
-        {/* Comparación serie a serie: hoy vs. semana anterior */}
-        <section>
+    <div className="fade-up border-t border-border bg-card px-4 py-5 md:px-6 md:py-6">
+      {/* Ficha de objetivo: el "spec" del ejercicio */}
+      <div className="mb-5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+          Objetivo
+        </span>
+        <Spec>{ex.sets} series</Spec>
+        <Spec>{sheet(ex.reps)} reps</Spec>
+        <Spec>RIR {sheet(ex.effort)}</Spec>
+        <Spec>desc {sheet(ex.rest)}</Spec>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 md:gap-5">
+        {/* ── Registro de hoy + comparación con la semana anterior ── */}
+        <section className="rounded-2xl border border-border bg-secondary/25 p-4">
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <p className="font-mono text-[10px] tracking-[0.24em] text-primary/90 uppercase">
+            <p className="font-mono text-[10px] font-semibold tracking-[0.22em] text-primary uppercase">
               Registro de hoy
             </p>
-            <p className="font-mono text-[10px] text-muted-foreground/55">
-              {doneCount}/{logs.length} series · obj. {ex.sets}×{sheet(ex.reps)}{" "}
-              · RIR {sheet(ex.effort)}
+            <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
+              {doneCount}/{logs.length} series
             </p>
           </div>
 
-          {/* Sub-encabezados de columna */}
-          <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-x-5 border-b border-white/8 pb-2">
+          {/* Leyenda de columnas */}
+          <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-x-3 px-1.5 pb-2">
             <span aria-hidden />
-            <p className="font-mono text-[9px] tracking-[0.2em] text-foreground/55 uppercase">
+            <span className="font-mono text-[9px] tracking-[0.18em] text-primary/80 uppercase">
               Hoy
-            </p>
-            <p className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground/45 uppercase">
+            </span>
+            <span className="border-l border-border pl-3 font-mono text-[9px] tracking-[0.18em] text-muted-foreground/55 uppercase">
               Sem. anterior
-            </p>
+            </span>
           </div>
 
-          <ul className="mt-1">
+          <ul className="space-y-1.5">
             {logs.map((s, i) => {
               const prev = hist?.lastWeek[i]
               const delta = s.status === "done" ? setDelta(s, prev) : null
               return (
                 <li
                   key={i}
-                  className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-5 rounded-lg py-2 transition-colors hover:bg-white/[0.025]"
+                  className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3 rounded-xl bg-background/40 px-1.5 py-2.5"
                 >
-                  <SetNode n={i + 1} status={s.status} />
+                  <span className="flex justify-center">
+                    <SetNode n={i + 1} status={s.status} />
+                  </span>
 
-                  {/* Columna: hoy + chip de progreso pegado al borde (gutter central) */}
+                  {/* Columna HOY: valor protagonista en display */}
                   {s.status === "done" ? (
-                    <span className="flex items-center gap-2 font-mono">
-                      <span className="grid grid-cols-[2rem_auto] items-baseline gap-x-1.5">
-                        <span className="text-right text-[14px] leading-none tabular-nums text-foreground">
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-display text-[26px] leading-none tabular-nums text-foreground">
                           {s.weight}
                         </span>
-                        <span className="flex items-baseline gap-1.5">
-                          <span className="text-[13px] text-muted-foreground/70">
-                            × {s.reps}
+                        <span className="font-mono text-[10px] text-muted-foreground/70">
+                          kg
+                        </span>
+                        <span className="font-mono text-[12px] text-muted-foreground">
+                          × {s.reps}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        {s.rir != null && (
+                          <span className="font-mono text-[10px] tracking-[0.04em] text-muted-foreground/60">
+                            RIR {s.rir}
                           </span>
-                          {s.rir != null && (
-                            <span className="text-[10px] tracking-[0.06em] text-muted-foreground/50">
-                              RIR {s.rir}
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                      {delta && (
-                        <span className="ml-auto pr-1">
-                          <DeltaChip d={delta} />
-                        </span>
-                      )}
-                    </span>
+                        )}
+                        {delta && <DeltaChip d={delta} />}
+                      </div>
+                    </div>
                   ) : s.status === "skipped" ? (
-                    <span className="font-mono text-[13px] text-muted-foreground italic line-through decoration-muted-foreground/40">
+                    <span className="font-mono text-[12px] text-muted-foreground italic line-through decoration-muted-foreground/40">
                       omitida
                     </span>
                   ) : (
-                    <span className="font-mono text-[13px] text-muted-foreground/45">
+                    <span className="font-mono text-[12px] text-muted-foreground/45">
                       pendiente
                     </span>
                   )}
 
-                  {/* Columna: semana anterior (referencia tenue) */}
-                  {prev ? (
-                    <span className="grid grid-cols-[2rem_auto] items-baseline gap-x-1.5 font-mono">
-                      <span className="text-right text-[13px] leading-none tabular-nums text-muted-foreground/80">
-                        {prev.weight}
-                      </span>
-                      <span className="flex items-baseline gap-1.5">
-                        <span className="text-[12px] text-muted-foreground/55">
-                          × {prev.reps}
-                        </span>
-                        <span className="text-[10px] tracking-[0.06em] text-muted-foreground/40">
+                  {/* Columna SEM. ANTERIOR: referencia apagada, divisor real */}
+                  <div className="border-l border-border pl-3">
+                    {prev ? (
+                      <>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-mono text-[16px] leading-none tabular-nums text-muted-foreground">
+                            {prev.weight}
+                          </span>
+                          <span className="font-mono text-[10px] text-muted-foreground/55">
+                            kg
+                          </span>
+                          <span className="font-mono text-[11px] text-muted-foreground/70">
+                            × {prev.reps}
+                          </span>
+                        </div>
+                        <div className="mt-1 font-mono text-[10px] text-muted-foreground/50">
                           RIR {prev.rir}
-                        </span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="font-mono text-[13px] text-muted-foreground/30">
+                        —
                       </span>
-                    </span>
-                  ) : (
-                    <span className="font-mono text-[13px] text-muted-foreground/30">
-                      —
-                    </span>
-                  )}
+                    )}
+                  </div>
                 </li>
               )
             })}
           </ul>
         </section>
 
-        {/* Línea de progresión a lo largo del macrociclo */}
-        {hist && <ProgressionRail name={ex.name} />}
+        {/* ── Progresión a lo largo del macrociclo ── */}
+        {hist && (
+          <section className="rounded-2xl border border-border bg-secondary/25 p-4">
+            <ProgressionRail name={ex.name} />
+          </section>
+        )}
       </div>
 
       {/* Acciones: primaria + secundarias, con la destructiva apartada */}
-      <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-white/8 pt-4">
+      <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Link
           href="/rutina/entrenar"
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 font-mono text-[11px] font-semibold tracking-[0.14em] text-primary-foreground uppercase shadow-[0_8px_24px_-12px] shadow-primary/60 transition-colors hover:bg-primary/90"
@@ -358,7 +387,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
         </Link>
         <button
           type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:bg-white/[0.05] hover:text-foreground"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:bg-secondary hover:text-foreground"
         >
           <RotateCcw className="size-3" />
           Reiniciar

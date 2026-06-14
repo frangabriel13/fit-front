@@ -99,10 +99,10 @@ export function ProgressionRail({ name }: { name: string }) {
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <p className="font-mono text-[10px] tracking-[0.24em] text-primary/90 uppercase">
+        <p className="font-mono text-[10px] font-semibold tracking-[0.22em] text-primary uppercase">
           Progresión
         </p>
-        <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground/55 uppercase">
+        <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground/75 uppercase">
           Top set
         </p>
       </div>
@@ -169,7 +169,7 @@ export function ProgressionRail({ name }: { name: string }) {
                   </span>
                 </span>
               ) : (
-                <span className="font-mono text-[13px] text-muted-foreground/40">
+                <span className="font-mono text-[13px] text-muted-foreground/55">
                   —
                 </span>
               )}
@@ -183,7 +183,7 @@ export function ProgressionRail({ name }: { name: string }) {
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-primary">
             <ArrowUp className="size-3" strokeWidth={2.5} />+{gain} kg
           </span>
-          <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/55 uppercase">
+          <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/75 uppercase">
             desde la semana 1
           </span>
         </div>
