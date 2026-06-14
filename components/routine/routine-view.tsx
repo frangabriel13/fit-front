@@ -225,7 +225,7 @@ function SetNode({ n, status }: { n: number; status: SetEntry["status"] }) {
   return (
     <span
       className={cn(
-        "grid size-7 place-items-center rounded-lg font-mono text-[11px] font-medium tabular-nums ring-1 ring-inset",
+        "grid size-6 place-items-center rounded-md font-mono text-[10px] font-medium tabular-nums ring-1 ring-inset",
         status === "done" && "bg-primary/15 text-primary ring-primary/35",
         status === "skipped" && "bg-secondary text-muted-foreground/70 ring-border",
         status === "pending" && "bg-secondary/50 text-muted-foreground/50 ring-border/60"
@@ -238,94 +238,53 @@ function SetNode({ n, status }: { n: number; status: SetEntry["status"] }) {
 
 // ─── detalle expandido: series de hoy, comparación, acciones ────────────────
 
-/** Chip de especificación del objetivo (lee como ficha de producto). */
-function Spec({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-md bg-secondary/70 px-2 py-1 font-mono text-[11px] tabular-nums text-foreground/85">
-      {children}
-    </span>
-  )
-}
-
 function RowDetail({ ex }: { ex: RoutineExercise }) {
   const logs =
     SESSION.logs[ex.name] ??
     Array.from({ length: ex.sets }, () => ({ status: "pending" as const }))
   const hist = HISTORY[ex.name]
 
-  const doneCount = logs.filter((s) => s.status === "done").length
-
   return (
     <div className="fade-up border-t border-border bg-card px-4 py-5 md:px-6 md:py-6">
-      {/* Ficha de objetivo: el "spec" del ejercicio */}
-      <div className="mb-5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-        <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-          Objetivo
-        </span>
-        <Spec>{ex.sets} series</Spec>
-        <Spec>{sheet(ex.reps)} reps</Spec>
-        <Spec>RIR {sheet(ex.effort)}</Spec>
-        <Spec>desc {sheet(ex.rest)}</Spec>
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2 md:gap-5">
         {/* ── Registro de hoy + comparación con la semana anterior ── */}
-        <section className="rounded-2xl border border-border bg-secondary/25 p-4">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
+        <section className="rounded-2xl bg-secondary p-4">
+          <div className="mb-3 flex items-baseline justify-between gap-3 px-2">
             <p className="font-mono text-[10px] font-semibold tracking-[0.22em] text-primary uppercase">
               Registro de hoy
             </p>
-            <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
-              {doneCount}/{logs.length} series
+            <p className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground/55 uppercase">
+              Sem. anterior
             </p>
           </div>
 
-          {/* Leyenda de columnas */}
-          <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-x-3 px-1.5 pb-2">
-            <span aria-hidden />
-            <span className="font-mono text-[9px] tracking-[0.18em] text-primary/80 uppercase">
-              Hoy
-            </span>
-            <span className="border-l border-border pl-3 font-mono text-[9px] tracking-[0.18em] text-muted-foreground/55 uppercase">
-              Sem. anterior
-            </span>
-          </div>
-
-          <ul className="space-y-1.5">
+          <ul className="divide-y divide-border/50">
             {logs.map((s, i) => {
               const prev = hist?.lastWeek[i]
               const delta = s.status === "done" ? setDelta(s, prev) : null
               return (
                 <li
                   key={i}
-                  className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3 rounded-xl bg-background/40 px-1.5 py-2.5"
+                  className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-2.5 px-2 py-2.5"
                 >
                   <span className="flex justify-center">
                     <SetNode n={i + 1} status={s.status} />
                   </span>
 
-                  {/* Columna HOY: valor protagonista en display */}
+                  {/* HOY — todo en una sola línea */}
                   {s.status === "done" ? (
-                    <div className="min-w-0">
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-display text-[26px] leading-none tabular-nums text-foreground">
-                          {s.weight}
+                    <div className="flex min-w-0 items-baseline gap-x-2">
+                      <span className="font-mono text-[15px] tabular-nums whitespace-nowrap text-foreground">
+                        <span className="font-semibold">{s.weight}</span>
+                        <span className="text-[10px] text-muted-foreground/70"> kg</span>
+                        <span className="text-muted-foreground"> × {s.reps}</span>
+                      </span>
+                      {s.rir != null && (
+                        <span className="hidden font-mono text-[10px] whitespace-nowrap text-muted-foreground/55 sm:inline">
+                          RIR {s.rir}
                         </span>
-                        <span className="font-mono text-[10px] text-muted-foreground/70">
-                          kg
-                        </span>
-                        <span className="font-mono text-[12px] text-muted-foreground">
-                          × {s.reps}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        {s.rir != null && (
-                          <span className="font-mono text-[10px] tracking-[0.04em] text-muted-foreground/60">
-                            RIR {s.rir}
-                          </span>
-                        )}
-                        {delta && <DeltaChip d={delta} />}
-                      </div>
+                      )}
+                      {delta && <DeltaChip d={delta} />}
                     </div>
                   ) : s.status === "skipped" ? (
                     <span className="font-mono text-[12px] text-muted-foreground italic line-through decoration-muted-foreground/40">
@@ -337,31 +296,21 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                     </span>
                   )}
 
-                  {/* Columna SEM. ANTERIOR: referencia apagada, divisor real */}
-                  <div className="border-l border-border pl-3">
+                  {/* SEM. ANTERIOR — referencia, alineada a la derecha */}
+                  <span className="justify-self-end font-mono text-[12px] tabular-nums whitespace-nowrap text-muted-foreground/75">
                     {prev ? (
                       <>
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-mono text-[16px] leading-none tabular-nums text-muted-foreground">
-                            {prev.weight}
-                          </span>
-                          <span className="font-mono text-[10px] text-muted-foreground/55">
-                            kg
-                          </span>
-                          <span className="font-mono text-[11px] text-muted-foreground/70">
-                            × {prev.reps}
-                          </span>
-                        </div>
-                        <div className="mt-1 font-mono text-[10px] text-muted-foreground/50">
-                          RIR {prev.rir}
-                        </div>
+                        {prev.weight}
+                        <span className="text-muted-foreground/45"> × {prev.reps}</span>
+                        <span className="hidden text-[10px] text-muted-foreground/45 sm:inline">
+                          {" "}
+                          · RIR {prev.rir}
+                        </span>
                       </>
                     ) : (
-                      <span className="font-mono text-[13px] text-muted-foreground/30">
-                        —
-                      </span>
+                      <span className="text-muted-foreground/30">—</span>
                     )}
-                  </div>
+                  </span>
                 </li>
               )
             })}
@@ -370,7 +319,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
 
         {/* ── Progresión a lo largo del macrociclo ── */}
         {hist && (
-          <section className="rounded-2xl border border-border bg-secondary/25 p-4">
+          <section className="rounded-2xl bg-secondary p-4">
             <ProgressionRail name={ex.name} />
           </section>
         )}
