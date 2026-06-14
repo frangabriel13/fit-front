@@ -218,7 +218,13 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
             </p>
           </div>
           <ul className="mt-3 space-y-2.5">
-            {logs.map((s, i) => (
+            {logs.map((s, i) => {
+              const prev = hist?.lastWeek[i]
+              const delta =
+                s.status === "done" && s.weight != null && prev
+                  ? s.weight - prev.weight
+                  : null
+              return (
               <li key={i} className="flex items-center gap-3">
                 <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/70">
                   S{i + 1}
@@ -234,6 +240,19 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                         <span className="text-muted-foreground">
                           {" "}
                           · RIR {s.rir}
+                        </span>
+                      )}
+                      {delta != null && delta !== 0 && (
+                        <span
+                          className={cn(
+                            "ml-2 text-[11px]",
+                            delta > 0
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {delta > 0 ? "↑" : "↓"} {delta > 0 ? "+" : ""}
+                          {delta}
                         </span>
                       )}
                     </span>
@@ -270,7 +289,8 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                   </span>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         </section>
 
@@ -279,7 +299,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
       </div>
 
       {/* Acciones */}
-      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/8 pt-4 font-mono text-[11px] tracking-[0.16em] uppercase">
+      <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 font-label text-xs font-medium tracking-[0.12em] uppercase">
         <Link
           href="/rutina/entrenar"
           className="inline-flex items-center gap-1.5 text-primary transition-colors hover:text-primary/75"

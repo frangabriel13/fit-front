@@ -6,6 +6,7 @@ import {
   SESSION,
   topWeight,
   type RoutineExercise,
+  type SetEntry,
 } from "@/lib/routine-data"
 import { cn } from "@/lib/utils"
 
@@ -75,11 +76,18 @@ export function SetTally({
 
 // ─── riel de progresión: Sem 1 → Sem. ant. → Hoy ────────────────────────────
 
-export function ProgressionRail({ name }: { name: string }) {
+export function ProgressionRail({
+  name,
+  todayLogs,
+}: {
+  name: string
+  /** Logs vivos del modo entrenamiento; sin esto cae al mock SESSION. */
+  todayLogs?: SetEntry[]
+}) {
   const hist = HISTORY[name]
   if (!hist) return null
 
-  const todayDone = (SESSION.logs[name] ?? []).filter(
+  const todayDone = (todayLogs ?? SESSION.logs[name] ?? []).filter(
     (s) => s.status === "done"
   )
   const todayTop = todayDone.length ? topWeight(todayDone) : null
@@ -96,7 +104,7 @@ export function ProgressionRail({ name }: { name: string }) {
 
   return (
     <section>
-      <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
+      <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
         Progresión · top set
       </p>
 
@@ -147,7 +155,7 @@ export function ProgressionRail({ name }: { name: string }) {
                   className={cn(
                     n.today
                       ? "font-display text-2xl leading-none text-primary"
-                      : "font-mono text-[13px] text-foreground/70"
+                      : "font-mono text-[13px] text-foreground/80"
                   )}
                 >
                   {n.weight}
@@ -172,7 +180,7 @@ export function ProgressionRail({ name }: { name: string }) {
       </div>
 
       {gain != null && gain > 0 && (
-        <p className="mt-5 inline-flex items-baseline gap-1.5 font-mono text-[11px] text-primary">
+        <p className="mt-5 flex items-baseline justify-center gap-1.5 font-mono text-[11px] text-primary">
           <span className="font-display text-base leading-none">↑ +{gain}</span>
           kg desde la semana 1
         </p>
