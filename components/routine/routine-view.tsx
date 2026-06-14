@@ -306,6 +306,19 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                           <DeltaChip d={delta} />
                         </span>
                       )}
+                      {delta != null && delta !== 0 && (
+                        <span
+                          className={cn(
+                            "ml-2 text-[11px]",
+                            delta > 0
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {delta > 0 ? "↑" : "↓"} {delta > 0 ? "+" : ""}
+                          {delta}
+                        </span>
+                      )}
                     </span>
                   ) : s.status === "skipped" ? (
                     <span className="font-mono text-[13px] text-muted-foreground italic line-through decoration-muted-foreground/40">
