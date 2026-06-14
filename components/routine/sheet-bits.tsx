@@ -1,6 +1,8 @@
 // Piezas compartidas del lenguaje "planilla": las usan el overview
 // (routine-view) y el modo entrenamiento (/rutina/entrenar).
 
+import { ArrowUp } from "lucide-react"
+
 import {
   HISTORY,
   SESSION,
@@ -104,11 +106,16 @@ export function ProgressionRail({
 
   return (
     <section>
-      <p className="font-label text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-        Progresión · top set
-      </p>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <p className="font-mono text-[10px] tracking-[0.24em] text-primary/90 uppercase">
+          Progresión
+        </p>
+        <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground/55 uppercase">
+          Top set
+        </p>
+      </div>
 
-      <div className="mt-5">
+      <div className="mt-6">
         {/* etiquetas */}
         <div className="grid grid-cols-3">
           {nodes.map((n) => (
@@ -180,10 +187,14 @@ export function ProgressionRail({
       </div>
 
       {gain != null && gain > 0 && (
-        <p className="mt-5 flex items-baseline justify-center gap-1.5 font-mono text-[11px] text-primary">
-          <span className="font-display text-base leading-none">↑ +{gain}</span>
-          kg desde la semana 1
-        </p>
+        <div className="mt-6 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-primary">
+            <ArrowUp className="size-3" strokeWidth={2.5} />+{gain} kg
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/55 uppercase">
+            desde la semana 1
+          </span>
+        </div>
       )}
     </section>
   )
