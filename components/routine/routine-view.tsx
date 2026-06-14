@@ -25,15 +25,31 @@ import { cn } from "@/lib/utils"
 
 // Columnas: nº · ejercicio · series · reps · rir · descanso · acciones.
 const COLS =
-  "md:grid md:grid-cols-[3.5rem_minmax(0,1fr)_3.5rem_4.5rem_4rem_4.5rem_4.5rem] md:items-center md:gap-2"
+  "md:grid md:grid-cols-[2.75rem_minmax(0,1fr)_3.5rem_4.5rem_4rem_4.5rem_4.5rem] md:items-center md:gap-3"
 
-function numClass(state: ExerciseState): string {
-  return cn(
-    "font-display text-lg leading-none",
-    state === "done" && "text-primary",
-    state === "in-progress" &&
-      "text-foreground underline decoration-ember decoration-2 underline-offset-4",
-    state === "pending" && "text-muted-foreground/50"
+// ─── indicador de estado (chip de número con color por estado) ──────────────
+
+function NumberChip({
+  num,
+  letter,
+  state,
+}: {
+  num: string
+  letter?: string
+  state: ExerciseState
+}) {
+  return (
+    <span
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-xl font-display text-base leading-none ring-1 transition-colors",
+        state === "done" && "bg-primary/15 text-primary ring-primary/30",
+        state === "in-progress" && "bg-ember/15 text-ember ring-ember/35",
+        state === "pending" && "bg-white/[0.04] text-muted-foreground ring-white/10"
+      )}
+    >
+      {num}
+      {letter && <span className="ml-0.5 text-[0.7em] opacity-70">{letter}</span>}
+    </span>
   )
 }
 
@@ -41,17 +57,17 @@ function StatusText({ state }: { state: ExerciseState }) {
   return (
     <span
       className={cn(
-        "mt-0.5 block font-mono text-[10px] tracking-[0.14em] uppercase",
-        state === "done" && "text-primary",
+        "mt-1 block font-mono text-[10px] tracking-[0.16em] uppercase",
+        state === "done" && "text-primary/90",
         state === "in-progress" && "text-ember",
-        state === "pending" && "text-muted-foreground/50"
+        state === "pending" && "text-muted-foreground/70"
       )}
     >
       {state === "done"
-        ? "completado"
+        ? "Completado"
         : state === "in-progress"
-          ? "en curso"
-          : "pendiente"}
+          ? "En curso"
+          : "Pendiente"}
     </span>
   )
 }
@@ -72,28 +88,29 @@ function RowActions({
   className?: string
 }) {
   return (
-    <span className={cn("flex items-center justify-end gap-1.5", className)}>
+    <span className={cn("flex items-center justify-end gap-1", className)}>
       <Link
         href="/rutina/entrenar"
         aria-label={`Entrenar ${name}`}
         className={cn(
-          "flex size-7 items-center justify-center rounded-md border transition-colors",
+          "flex size-10 items-center justify-center rounded-xl border transition-colors md:size-9",
           state === "in-progress"
             ? "border-ember/50 text-ember hover:bg-ember hover:text-background"
-            : "border-white/12 text-muted-foreground hover:border-primary/50 hover:text-primary"
+            : "border-white/12 text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
         )}
       >
-        <Play className="size-3 fill-current" />
+        <Play className="size-3.5 fill-current" />
       </Link>
       <button
         type="button"
         onClick={onToggle}
         aria-label="Ver detalle"
-        className="flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground"
+        aria-expanded={expanded}
+        className="flex size-10 cursor-pointer items-center justify-center rounded-xl text-muted-foreground/70 transition-colors hover:bg-white/[0.04] hover:text-foreground md:size-9"
       >
         <ChevronDown
           className={cn(
-            "size-3.5 transition-transform duration-300",
+            "size-4 transition-transform duration-300",
             expanded && "rotate-180"
           )}
         />
@@ -115,60 +132,54 @@ function SheetRow({
 }) {
   const { ex, num, letter, chains } = item
   const state = exerciseState(SESSION.logs[ex.name])
-  const rest = chains ? "→" : sheet(ex.rest)
 
   return (
-    <li>
-      <div
-        className={cn(
-          "group/row -mx-2 rounded-md px-2 py-3.5 transition-colors hover:bg-white/[0.025]",
-          COLS
-        )}
-      >
-        <span className={numClass(state)}>
-          {num}
-          {letter && (
-            <span className="ml-0.5 text-[0.7em] text-primary">{letter}</span>
-          )}
-        </span>
+    <li
+      className={cn(
+        "overflow-hidden rounded-2xl border bg-card/40 transition-colors",
+        expanded ? "border-white/15 bg-card/60" : "border-white/8 hover:border-white/15"
+      )}
+    >
+      <div className={cn("px-3 py-3 md:px-4", COLS)}>
+        <NumberChip num={num} letter={letter} state={state} />
 
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={expanded}
-          className="mt-1 min-w-0 cursor-pointer text-left outline-none md:mt-0"
+          className="mt-2 min-w-0 cursor-pointer text-left outline-none md:mt-0"
         >
           <span
             className={cn(
               "block truncate text-[15px] font-medium",
-              state === "done" ? "text-foreground/55" : "text-foreground/95"
+              state === "done" ? "text-foreground/65" : "text-foreground"
             )}
           >
             {ex.name}
           </span>
           <StatusText state={state} />
-          <span className="mt-1 block font-mono text-[12px] text-muted-foreground md:hidden">
+          <span className="mt-1.5 block font-mono text-[12px] text-muted-foreground md:hidden">
             {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
             {chains ? "sin pausa →" : sheet(ex.rest)}
           </span>
         </button>
 
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
           {ex.sets}
         </span>
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
           {sheet(ex.reps)}
         </span>
-        <span className="hidden text-center font-mono text-[13px] text-foreground/85 md:block">
+        <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
           {sheet(ex.effort)}
         </span>
         <span
           className={cn(
             "hidden text-center font-mono text-[13px] md:block",
-            chains ? "text-primary/70" : "text-foreground/85"
+            chains ? "text-primary/80" : "text-foreground/90"
           )}
         >
-          {rest}
+          {chains ? "→" : sheet(ex.rest)}
         </span>
 
         <RowActions
@@ -194,7 +205,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
   const hist = HISTORY[ex.name]
 
   return (
-    <div className="fade-up mt-1 mb-7 ml-2 border-l border-white/12 pt-1 pb-1 pl-5 md:ml-[1.05rem] md:pl-8">
+    <div className="fade-up border-t border-white/8 bg-white/[0.015] px-4 pt-5 pb-5 md:px-5">
       <div className={cn("grid gap-x-12 gap-y-7", hist && "md:grid-cols-2")}>
         {/* Libro de series de hoy */}
         <section>
@@ -202,14 +213,14 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
             <p className="font-mono text-[10px] tracking-[0.22em] text-muted-foreground uppercase">
               Series de hoy
             </p>
-            <p className="font-mono text-[10px] text-muted-foreground/50">
+            <p className="font-mono text-[10px] text-muted-foreground/70">
               obj. {ex.sets}×{sheet(ex.reps)} · RIR {sheet(ex.effort)}
             </p>
           </div>
           <ul className="mt-3 space-y-2.5">
             {logs.map((s, i) => (
               <li key={i} className="flex items-center gap-3">
-                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/50">
+                <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground/70">
                   S{i + 1}
                 </span>
                 <SetTally status={s.status} />
@@ -233,13 +244,13 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
                     </span>
                   )}
                   {s.status === "pending" && (
-                    <span className="text-muted-foreground/35">
+                    <span className="text-muted-foreground/50">
                       sin registrar
                     </span>
                   )}
                 </span>
                 {s.status !== "pending" && (
-                  <span className="flex items-center gap-0.5 text-muted-foreground/40">
+                  <span className="flex items-center gap-0.5 text-muted-foreground/50">
                     <button
                       type="button"
                       aria-label={`Resetear serie ${i + 1}`}
@@ -317,7 +328,7 @@ export function RoutineView() {
   return (
     <div>
       {/* Tabs tipográficos de día */}
-      <nav className="flex gap-7 overflow-x-auto border-b border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="flex gap-6 overflow-x-auto border-b border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {ROUTINE.days.map((d, i) => (
           <button
             key={d.id}
@@ -330,7 +341,7 @@ export function RoutineView() {
             <span
               className={cn(
                 "mr-2 font-mono text-[10px]",
-                i === active ? "text-primary" : "text-muted-foreground/50"
+                i === active ? "text-primary" : "text-muted-foreground/60"
               )}
             >
               {String(d.order).padStart(2, "0")}
@@ -340,50 +351,70 @@ export function RoutineView() {
                 "font-display text-xl tracking-wide uppercase transition-colors",
                 i === active
                   ? "text-foreground"
-                  : "text-muted-foreground/50 hover:text-muted-foreground"
+                  : "text-muted-foreground/60 hover:text-muted-foreground"
               )}
             >
               {d.name}
-              {d.placeholder && <sup className="ml-0.5 text-primary/60">*</sup>}
+              {d.placeholder && <sup className="ml-0.5 text-primary/70">*</sup>}
             </span>
             {i === active && (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
             )}
           </button>
         ))}
       </nav>
 
-      {/* Franja de sesión */}
+      {/* Tarjeta de sesión */}
       <div
         key={`session-${day.id}`}
-        className="fade-up flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-white/10 py-4"
+        className="fade-up mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-white/10 bg-card/40 px-5 py-4"
       >
-        <p className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+        <div className="min-w-0">
           {hasSession ? (
             <>
-              <span className="mr-2 inline-block size-1.5 rounded-full bg-primary align-middle" />
-              <span className="text-foreground">en curso</span> — {doneCount} de{" "}
-              {day.exercises.length} completados · empezado 18:40
+              <p className="flex items-center gap-2 font-mono text-[11px] tracking-[0.18em] uppercase">
+                <span className="inline-block size-1.5 animate-pulse rounded-full bg-ember" />
+                <span className="text-ember">En curso</span>
+                <span className="text-muted-foreground/50">·</span>
+                <span className="text-muted-foreground">empezado 18:40</span>
+              </p>
+              <p className="mt-1.5 text-sm text-foreground">
+                <span className="font-display text-lg text-primary">
+                  {doneCount}
+                </span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  de {day.exercises.length} ejercicios completados
+                </span>
+              </p>
             </>
           ) : (
             <>
-              sin empezar — {day.exercises.length} ejercicios · {day.focus}
+              <p className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                Sin empezar
+              </p>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                <span className="text-foreground">
+                  {day.exercises.length} ejercicios
+                </span>{" "}
+                · {day.focus}
+              </p>
             </>
           )}
-        </p>
+        </div>
         <span className="flex items-center gap-1.5">
           {hasSession && (
             <button
               type="button"
               aria-label="Reiniciar entrenamiento"
-              className="flex size-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground"
+              className="flex size-10 cursor-pointer items-center justify-center rounded-xl text-muted-foreground/70 transition-colors hover:bg-white/[0.04] hover:text-foreground"
             >
               <RotateCcw className="size-4" />
             </button>
           )}
           <Button
             asChild
-            className="h-9 px-4 text-[11px] font-semibold tracking-[0.16em] uppercase"
+            className="h-10 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
           >
             <Link href="/rutina/entrenar">
               <Play className="size-3.5 fill-current" />
@@ -396,7 +427,7 @@ export function RoutineView() {
       {/* Encabezado de columnas (md+) */}
       <div
         className={cn(
-          "hidden border-b border-white/10 pt-5 pb-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase",
+          "mt-6 hidden px-4 pb-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground/80 uppercase",
           COLS
         )}
       >
@@ -412,7 +443,7 @@ export function RoutineView() {
       {/* Planilla */}
       <ul
         key={`sheet-${day.id}`}
-        className="fade-up divide-y divide-white/8 [--delay:60ms]"
+        className="fade-up mt-2 space-y-2 [--delay:60ms] md:mt-0"
       >
         {items.map((item) => (
           <SheetRow
@@ -425,23 +456,23 @@ export function RoutineView() {
       </ul>
 
       {/* Notas de planilla */}
-      <div className="mt-2 space-y-1.5 border-t border-white/10 pt-4 font-mono text-[11px] text-muted-foreground/70">
+      <div className="mt-6 space-y-2 rounded-2xl border border-white/8 bg-white/[0.015] px-5 py-4 font-mono text-[11px] text-muted-foreground">
         {supersetRest && (
           <p>
-            <span className="mr-2 text-primary/80">A·B</span>
+            <span className="mr-2 font-semibold text-primary/90">A·B</span>
             Superserie: van seguidos, sin pausa; el descanso ({sheet(supersetRest)})
             corre al cerrar cada vuelta.
           </p>
         )}
         {hasFallo && (
           <p>
-            <span className="mr-2 text-primary/80">F</span>
+            <span className="mr-2 font-semibold text-primary/90">F</span>
             Al fallo.
           </p>
         )}
         {day.placeholder && (
           <p>
-            <span className="mr-2 text-primary/80">*</span>
+            <span className="mr-2 font-semibold text-primary/90">*</span>
             Día de ejemplo — editalo a gusto.
           </p>
         )}

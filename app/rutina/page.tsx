@@ -24,21 +24,38 @@ export default function RutinaPage() {
           Inicio
         </Link>
 
-        <div className="mt-5 mb-8 flex items-end justify-between gap-4">
-          <div>
+        <div className="fade-up mt-5 mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 [--delay:60ms]">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.28em] text-primary uppercase">
               Mi rutina
             </p>
-            <h1 className="mt-1 font-display text-4xl leading-none uppercase lg:text-5xl">
+            <h1 className="mt-1.5 font-display text-4xl leading-none uppercase lg:text-5xl">
               {ROUTINE.name}
             </h1>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-              {ROUTINE.days.length} días · macrociclo {MACROCYCLE.totalWeeks}{" "}
-              sem.
-            </p>
-            <div className="mt-2 flex items-baseline justify-end gap-2.5 font-mono text-[13px] leading-none">
+
+          {/* Posición en el macrociclo: compacto, en línea con el título */}
+          <div className="flex items-center gap-4 border-l border-white/10 pl-6">
+            <div className="text-right">
+              <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground/80 uppercase">
+                Macrociclo · {ROUTINE.days.length} días
+              </p>
+              <p className="mt-0.5 font-mono text-[13px] leading-none tracking-[0.1em] text-foreground uppercase">
+                Sem {String(MACROCYCLE.week).padStart(2, "0")}
+                <span className="text-muted-foreground/60">
+                  {" "}
+                  / {MACROCYCLE.totalWeeks}
+                </span>
+              </p>
+            </div>
+            <div
+              className="flex w-24 gap-1"
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={MACROCYCLE.totalWeeks}
+              aria-valuenow={MACROCYCLE.week}
+              aria-label={`Semana ${MACROCYCLE.week} de ${MACROCYCLE.totalWeeks}`}
+            >
               {Array.from({ length: MACROCYCLE.totalWeeks }, (_, i) => {
                 const week = i + 1
                 const current = week === MACROCYCLE.week
@@ -46,17 +63,14 @@ export default function RutinaPage() {
                 return (
                   <span
                     key={i}
-                    aria-current={current ? "step" : undefined}
                     className={cn(
-                      "pb-1",
+                      "h-6 flex-1 rounded-full transition-colors",
                       current &&
-                        "text-primary underline decoration-primary decoration-2 underline-offset-4",
-                      past && "text-foreground/80",
-                      !current && !past && "text-muted-foreground/35"
+                        "bg-primary shadow-[0_0_12px_-2px] shadow-primary/60",
+                      past && "bg-primary/45",
+                      !current && !past && "bg-white/8"
                     )}
-                  >
-                    {String(week).padStart(2, "0")}
-                  </span>
+                  />
                 )
               })}
             </div>
