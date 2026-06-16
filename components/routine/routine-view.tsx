@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowDown, ArrowUp, Minus, Play, RotateCcw, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, Minus, Play, RotateCcw, X } from "lucide-react"
 
 import {
   exerciseState,
@@ -48,27 +48,16 @@ function NumberChip({
         state === "pending" && "bg-white/[0.04] text-muted-foreground ring-white/10"
       )}
     >
-      {num}
-      {letter && <span className="ml-0.5 text-[0.7em] opacity-70">{letter}</span>}
-    </span>
-  )
-}
-
-function StatusText({ state }: { state: ExerciseState }) {
-  return (
-    <span
-      className={cn(
-        "mt-1 block font-mono text-[10px] tracking-[0.16em] uppercase",
-        state === "done" && "text-primary/90",
-        state === "in-progress" && "text-ember",
-        state === "pending" && "text-muted-foreground/70"
+      {state === "done" ? (
+        <Check className="size-5" strokeWidth={2.5} />
+      ) : (
+        <>
+          {num}
+          {letter && (
+            <span className="ml-0.5 text-[0.7em] opacity-70">{letter}</span>
+          )}
+        </>
       )}
-    >
-      {state === "done"
-        ? "Completado"
-        : state === "in-progress"
-          ? "En curso"
-          : "Pendiente"}
     </span>
   )
 }
@@ -152,10 +141,9 @@ function SheetRow({
           >
             {ex.name}
           </span>
-          <StatusText state={state} />
           <span className="mt-1.5 block font-mono text-[12px] text-muted-foreground md:hidden">
             {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
-            {chains ? "sin pausa →" : sheet(ex.rest)}
+            {chains ? <span className="text-primary/80">→</span> : sheet(ex.rest)}
           </span>
         </div>
 
@@ -369,9 +357,6 @@ export function RoutineView() {
     (e) => exerciseState(SESSION.logs[e.name]) === "done"
   ).length
 
-  const supersetRest = items.find((it) => it.chains)?.ex.rest
-  const hasFallo = day.exercises.some((e) => e.effort.includes("fallo"))
-
   const toggle = (key: string) =>
     setExpanded((cur) => (cur === key ? null : key))
 
@@ -417,7 +402,7 @@ export function RoutineView() {
       {/* Tarjeta de sesión */}
       <div
         key={`session-${day.id}`}
-        className="fade-up mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-white/10 bg-card/40 px-5 py-4"
+        className="fade-up mt-5 hidden flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-white/10 bg-card/40 px-5 py-4 md:flex"
       >
         <div className="min-w-0">
           {hasSession ? (
@@ -493,7 +478,7 @@ export function RoutineView() {
       {/* Planilla */}
       <ul
         key={`sheet-${day.id}`}
-        className="fade-up mt-2 space-y-2 [--delay:60ms] md:mt-0"
+        className="fade-up mt-5 space-y-2 [--delay:60ms] md:mt-0"
       >
         {items.map((item) => (
           <SheetRow
@@ -505,28 +490,13 @@ export function RoutineView() {
         ))}
       </ul>
 
-      {/* Notas de planilla */}
-      <div className="mt-6 space-y-2 rounded-2xl border border-white/8 bg-white/[0.015] px-5 py-4 font-mono text-[11px] text-muted-foreground">
-        {supersetRest && (
-          <p>
-            <span className="mr-2 font-semibold text-primary/90">A·B</span>
-            Superserie: van seguidos, sin pausa; el descanso ({sheet(supersetRest)})
-            corre al cerrar cada vuelta.
-          </p>
-        )}
-        {hasFallo && (
-          <p>
-            <span className="mr-2 font-semibold text-primary/90">F</span>
-            Al fallo.
-          </p>
-        )}
-        {day.placeholder && (
-          <p>
-            <span className="mr-2 font-semibold text-primary/90">*</span>
-            Día de ejemplo — editalo a gusto.
-          </p>
-        )}
-      </div>
+      {/* Nota de día de ejemplo (placeholder del mock) */}
+      {day.placeholder && (
+        <p className="mt-6 rounded-2xl border border-white/8 bg-white/[0.015] px-5 py-4 font-mono text-[11px] text-muted-foreground">
+          <span className="mr-2 font-semibold text-primary/90">*</span>
+          Día de ejemplo — editalo a gusto.
+        </p>
+      )}
 
       {/* CTA de sesión fijo al pulgar (solo móvil) */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
