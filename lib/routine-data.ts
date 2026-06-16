@@ -172,87 +172,163 @@ export interface HistSet {
   rir: number
 }
 
-/** Historial por ejercicio: semana pasada y Semana 1 del macrociclo (6 sem). */
-export const HISTORY: Record<
-  string,
-  { lastWeek: HistSet[]; firstWeek: HistSet[] }
-> = {
+/**
+ * Historial por ejercicio: una entrada por semana COMPLETADA del macrociclo
+ * (índice 0 = Semana 1). La semana en curso no vive acá — sale de SESSION.
+ */
+export const HISTORY: Record<string, { weeks: HistSet[][] }> = {
   "Hip Thrust": {
-    lastWeek: [
-      { weight: 57.5, reps: 12, rir: 1 },
-      { weight: 57.5, reps: 11, rir: 1 },
-      { weight: 57.5, reps: 10, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 50, reps: 12, rir: 2 },
-      { weight: 50, reps: 10, rir: 1 },
-      { weight: 50, reps: 10, rir: 1 },
+    weeks: [
+      [
+        { weight: 50, reps: 12, rir: 2 },
+        { weight: 50, reps: 10, rir: 1 },
+        { weight: 50, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 52.5, reps: 12, rir: 2 },
+        { weight: 52.5, reps: 11, rir: 1 },
+        { weight: 52.5, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 55, reps: 12, rir: 1 },
+        { weight: 55, reps: 11, rir: 1 },
+        { weight: 55, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 57.5, reps: 12, rir: 1 },
+        { weight: 57.5, reps: 11, rir: 1 },
+        { weight: 57.5, reps: 10, rir: 0 },
+      ],
     ],
   },
   "Peso Muerto Rumano": {
-    lastWeek: [
-      { weight: 67.5, reps: 12, rir: 1 },
-      { weight: 67.5, reps: 11, rir: 1 },
-      { weight: 67.5, reps: 10, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 60, reps: 12, rir: 2 },
-      { weight: 60, reps: 11, rir: 1 },
-      { weight: 60, reps: 10, rir: 1 },
+    weeks: [
+      [
+        { weight: 60, reps: 12, rir: 2 },
+        { weight: 60, reps: 11, rir: 1 },
+        { weight: 60, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 62.5, reps: 12, rir: 1 },
+        { weight: 62.5, reps: 11, rir: 1 },
+        { weight: 62.5, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 65, reps: 12, rir: 1 },
+        { weight: 65, reps: 11, rir: 1 },
+        { weight: 65, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 67.5, reps: 12, rir: 1 },
+        { weight: 67.5, reps: 11, rir: 1 },
+        { weight: 67.5, reps: 10, rir: 0 },
+      ],
     ],
   },
   "Prensa 45°": {
-    lastWeek: [
-      { weight: 115, reps: 12, rir: 1 },
-      { weight: 115, reps: 11, rir: 1 },
-      { weight: 115, reps: 10, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 100, reps: 12, rir: 2 },
-      { weight: 100, reps: 10, rir: 1 },
-      { weight: 100, reps: 10, rir: 1 },
+    weeks: [
+      [
+        { weight: 100, reps: 12, rir: 2 },
+        { weight: 100, reps: 10, rir: 1 },
+        { weight: 100, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 105, reps: 12, rir: 1 },
+        { weight: 105, reps: 11, rir: 1 },
+        { weight: 105, reps: 10, rir: 1 },
+      ],
+      [
+        { weight: 110, reps: 12, rir: 1 },
+        { weight: 110, reps: 11, rir: 1 },
+        { weight: 110, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 115, reps: 12, rir: 1 },
+        { weight: 115, reps: 11, rir: 1 },
+        { weight: 115, reps: 10, rir: 0 },
+      ],
     ],
   },
   "Abducciones en máquina": {
-    lastWeek: [
-      { weight: 45, reps: 15, rir: 0 },
-      { weight: 45, reps: 13, rir: 0 },
-      { weight: 45, reps: 12, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 35, reps: 15, rir: 1 },
-      { weight: 35, reps: 12, rir: 1 },
-      { weight: 35, reps: 11, rir: 0 },
+    weeks: [
+      [
+        { weight: 35, reps: 15, rir: 1 },
+        { weight: 35, reps: 12, rir: 1 },
+        { weight: 35, reps: 11, rir: 0 },
+      ],
+      [
+        { weight: 40, reps: 15, rir: 1 },
+        { weight: 40, reps: 13, rir: 0 },
+        { weight: 40, reps: 12, rir: 0 },
+      ],
+      [
+        { weight: 42.5, reps: 15, rir: 0 },
+        { weight: 42.5, reps: 13, rir: 0 },
+        { weight: 42.5, reps: 12, rir: 0 },
+      ],
+      [
+        { weight: 45, reps: 15, rir: 0 },
+        { weight: 45, reps: 13, rir: 0 },
+        { weight: 45, reps: 12, rir: 0 },
+      ],
     ],
   },
   "Adducciones en máquina": {
-    lastWeek: [
-      { weight: 40, reps: 15, rir: 0 },
-      { weight: 40, reps: 14, rir: 0 },
-      { weight: 40, reps: 12, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 30, reps: 15, rir: 1 },
-      { weight: 30, reps: 13, rir: 1 },
-      { weight: 30, reps: 12, rir: 0 },
+    weeks: [
+      [
+        { weight: 30, reps: 15, rir: 1 },
+        { weight: 30, reps: 13, rir: 1 },
+        { weight: 30, reps: 12, rir: 0 },
+      ],
+      [
+        { weight: 35, reps: 15, rir: 0 },
+        { weight: 35, reps: 14, rir: 0 },
+        { weight: 35, reps: 12, rir: 0 },
+      ],
+      [
+        { weight: 37.5, reps: 15, rir: 0 },
+        { weight: 37.5, reps: 14, rir: 0 },
+        { weight: 37.5, reps: 12, rir: 0 },
+      ],
+      [
+        { weight: 40, reps: 15, rir: 0 },
+        { weight: 40, reps: 14, rir: 0 },
+        { weight: 40, reps: 12, rir: 0 },
+      ],
     ],
   },
   "Extensión de cuádriceps": {
-    lastWeek: [
-      { weight: 32.5, reps: 12, rir: 0 },
-      { weight: 32.5, reps: 11, rir: 0 },
-      { weight: 32.5, reps: 10, rir: 0 },
-    ],
-    firstWeek: [
-      { weight: 25, reps: 12, rir: 1 },
-      { weight: 25, reps: 11, rir: 1 },
-      { weight: 25, reps: 10, rir: 0 },
+    weeks: [
+      [
+        { weight: 25, reps: 12, rir: 1 },
+        { weight: 25, reps: 11, rir: 1 },
+        { weight: 25, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 27.5, reps: 12, rir: 0 },
+        { weight: 27.5, reps: 11, rir: 0 },
+        { weight: 27.5, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 30, reps: 12, rir: 0 },
+        { weight: 30, reps: 11, rir: 0 },
+        { weight: 30, reps: 10, rir: 0 },
+      ],
+      [
+        { weight: 32.5, reps: 12, rir: 0 },
+        { weight: 32.5, reps: 11, rir: 0 },
+        { weight: 32.5, reps: 10, rir: 0 },
+      ],
     ],
   },
 }
 
-/** Posición dentro del macrociclo (mock). */
-export const MACROCYCLE = { week: 2, totalWeeks: 6 }
+/**
+ * Posición dentro del macrociclo (mock). `week` debe ser una más que la última
+ * semana cargada en HISTORY: las semanas 1..(week-1) están completas y la
+ * semana `week` es la de hoy (en curso, vía SESSION).
+ */
+export const MACROCYCLE = { week: 5, totalWeeks: 6 }
 
 // ── Helpers de estado/tendencia ──────────────────────────────────────────────
 
@@ -269,6 +345,27 @@ export function topWeight(sets: { weight?: number }[]): number | null {
   return ws.length ? Math.max(...ws) : null
 }
 
+/**
+ * 1RM estimado (fórmula de Epley): convierte "peso × reps" en una sola carga
+ * comparable. Así una mejora en repeticiones al mismo peso también cuenta como
+ * progreso. Es una estimación (pierde precisión con reps muy altas).
+ */
+export function e1rm(weight: number, reps: number): number {
+  return weight * (1 + reps / 30)
+}
+
+/** Mejor 1RM estimado entre las series (la serie "tope" real, no la más pesada). */
+export function topE1RM(
+  sets: { weight?: number; reps?: number }[]
+): number | null {
+  const vals = sets
+    .map((s) =>
+      s.weight != null && s.reps != null ? e1rm(s.weight, s.reps) : null
+    )
+    .filter((v): v is number => v != null)
+  return vals.length ? Math.max(...vals) : null
+}
+
 /** Tendencia compacta: hoy vs semana pasada; si no empezó, último peso usado. */
 export function exerciseTrend(name: string): {
   label: string
@@ -276,7 +373,7 @@ export function exerciseTrend(name: string): {
 } {
   const hist = HISTORY[name]
   if (!hist) return { label: "—", delta: null }
-  const last = topWeight(hist.lastWeek)
+  const last = topWeight(hist.weeks.at(-1) ?? [])
   const today = topWeight(SESSION.logs[name] ?? [])
   if (today != null && last != null) {
     return { label: `${today} kg`, delta: today - last }

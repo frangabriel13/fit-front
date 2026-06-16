@@ -251,7 +251,7 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
 
           <ul className="divide-y divide-border/50">
             {logs.map((s, i) => {
-              const prev = hist?.lastWeek[i]
+              const prev = hist?.weeks.at(-1)?.[i]
               const delta = s.status === "done" ? setDelta(s, prev) : null
               return (
                 <li

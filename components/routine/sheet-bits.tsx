@@ -1,12 +1,13 @@
 // Piezas compartidas del lenguaje "planilla": las usan el overview
 // (routine-view) y el modo entrenamiento (/rutina/entrenar).
 
-import { ArrowUp } from "lucide-react"
+import { ArrowDown, ArrowUp, Minus } from "lucide-react"
 
 import {
   HISTORY,
+  MACROCYCLE,
   SESSION,
-  topWeight,
+  topE1RM,
   type RoutineExercise,
 } from "@/lib/routine-data"
 import { cn } from "@/lib/utils"
@@ -84,107 +85,135 @@ export function ProgressionRail({ name }: { name: string }) {
   const todayDone = (SESSION.logs[name] ?? []).filter(
     (s) => s.status === "done"
   )
-  const todayTop = todayDone.length ? topWeight(todayDone) : null
+  const todayTop = todayDone.length ? topE1RM(todayDone) : null
 
-  const nodes = [
-    { key: "s1", label: "Sem 1", weight: topWeight(hist.firstWeek) },
-    { key: "prev", label: "Sem. ant.", weight: topWeight(hist.lastWeek) },
-    { key: "today", label: "Hoy", weight: todayTop, today: true },
-  ]
-  const baseWeight = topWeight(hist.firstWeek)
-  const refWeight = todayTop ?? topWeight(hist.lastWeek)
-  const gain =
-    refWeight != null && baseWeight != null ? refWeight - baseWeight : null
+  // Un nodo por semana del macrociclo. El valor es el 1RM estimado (e1RM):
+  // combina peso y reps, así "mismo peso, más reps" también sube la barra.
+  const nodes = Array.from({ length: MACROCYCLE.totalWeeks }, (_, i) => {
+    const week = i + 1
+    const past = hist.weeks[i]
+    const today = week === MACROCYCLE.week
+    const value = past ? topE1RM(past) : today ? todayTop : null
+    return { week, value, today, future: week > MACROCYCLE.week }
+  })
+
+  const values = nodes
+    .map((n) => n.value)
+    .filter((v): v is number => v != null)
+  const max = values.length ? Math.max(...values) : 0
+  // Línea base a la mitad del máximo: una progresión real trepa, pero las
+  // mesetas quedan parejas en vez de exagerar el ruido semana a semana.
+  const heightPct = (v: number) => {
+    if (max <= 0) return 70
+    const baseline = max * 0.5
+    return Math.max(12, Math.min(100, ((v - baseline) / (max - baseline)) * 100))
+  }
+
+  const base = nodes[0]?.value ?? null
+  const ref = todayTop ?? topE1RM(hist.weeks.at(-1) ?? [])
+  const gain = ref != null && base != null ? Math.round(ref - base) : null
+  // Estado del tramo, sin connotación de alarma en mesetas o mermas.
+  const trend = gain == null ? null : gain >= 1 ? "up" : gain <= -1 ? "down" : "flat"
 
   return (
     <section>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
         <p className="font-mono text-[10px] font-semibold tracking-[0.22em] text-primary uppercase">
           Progresión
         </p>
         <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground/75 uppercase">
-          Top set
+          1RM est. · kg
         </p>
       </div>
 
-      <div className="mt-6">
-        {/* etiquetas */}
-        <div className="grid grid-cols-3">
-          {nodes.map((n) => (
+      {/* Gráfico de barras: e1RM por semana del macrociclo */}
+      <div className="flex items-end gap-1.5">
+        {nodes.map((n) => (
+          <div
+            key={n.week}
+            className="flex flex-1 flex-col items-center gap-1.5"
+          >
             <span
-              key={n.key}
               className={cn(
-                "text-center font-mono text-[9px] tracking-[0.16em] uppercase",
-                n.today ? "text-primary" : "text-muted-foreground/80"
+                "font-mono text-[10px] leading-none tabular-nums",
+                n.today
+                  ? "font-semibold text-primary"
+                  : n.value != null
+                    ? "text-foreground/70"
+                    : "text-muted-foreground/25"
               )}
             >
-              {n.label}
+              {n.value != null ? Math.round(n.value) : "–"}
             </span>
-          ))}
-        </div>
 
-        {/* riel con nodos */}
-        <div className="relative my-2.5 grid grid-cols-3">
-          <span
-            aria-hidden
-            className="absolute inset-x-0 top-1/2 mx-[16.66%] h-px -translate-y-1/2 bg-gradient-to-r from-white/15 via-primary/40 to-primary/70"
-          />
-          {nodes.map((n) => (
-            <span key={n.key} className="flex justify-center">
-              <span
+            <div className="flex h-20 w-full items-end">
+              <div
+                aria-hidden
                 className={cn(
-                  "relative size-2.5 rounded-full",
-                  n.today && n.weight == null
-                    ? "border border-dashed border-white/25 bg-background"
-                    : n.today
-                      ? "bg-primary shadow-[0_0_10px_-1px] shadow-primary/70 ring-2 ring-primary/25"
-                      : "bg-foreground/30"
+                  "w-full rounded-t-[3px]",
+                  n.today &&
+                    n.value != null &&
+                    "bg-primary shadow-[0_0_10px_-1px] shadow-primary/60",
+                  n.today &&
+                    n.value == null &&
+                    "border border-dashed border-primary/40 bg-primary/5",
+                  !n.today && n.value != null && "bg-foreground/25",
+                  !n.today && n.value == null && "bg-white/[0.04]"
                 )}
+                style={{
+                  height:
+                    n.value != null
+                      ? `${heightPct(n.value)}%`
+                      : n.today
+                        ? "34%"
+                        : "14%",
+                }}
               />
-            </span>
-          ))}
-        </div>
+            </div>
 
-        {/* pesos */}
-        <div className="grid grid-cols-3 items-baseline">
-          {nodes.map((n) => (
-            <span key={n.key} className="text-center">
-              {n.weight != null ? (
-                <span
-                  className={cn(
-                    n.today
-                      ? "font-display text-2xl leading-none text-primary"
-                      : "font-mono text-[13px] text-foreground/70"
-                  )}
-                >
-                  {n.weight}
-                  <span
-                    className={cn(
-                      n.today
-                        ? "ml-0.5 text-xs text-primary/70"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    kg
-                  </span>
-                </span>
-              ) : (
-                <span className="font-mono text-[13px] text-muted-foreground/55">
-                  —
-                </span>
+            <span
+              className={cn(
+                "font-mono text-[9px] leading-none tracking-[0.08em] uppercase",
+                n.today ? "text-primary" : "text-muted-foreground/55"
               )}
+            >
+              {n.today ? "Hoy" : `S${n.week}`}
             </span>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
-      {gain != null && gain > 0 && (
-        <div className="mt-6 flex items-center gap-2">
+      {trend === "up" && (
+        <div className="mt-4 flex items-center gap-2">
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-primary">
             <ArrowUp className="size-3" strokeWidth={2.5} />+{gain} kg
           </span>
           <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/75 uppercase">
-            desde la semana 1
+            est. desde la semana 1
+          </span>
+        </div>
+      )}
+
+      {trend === "flat" && (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] font-medium text-muted-foreground">
+            <Minus className="size-3" strokeWidth={2.5} />
+            Estable
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/75 uppercase">
+            mantener el nivel ya es progreso
+          </span>
+        </div>
+      )}
+
+      {trend === "down" && (
+        <div className="mt-4 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-muted-foreground">
+            <ArrowDown className="size-3" strokeWidth={2.5} />
+            {gain} kg
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.08em] text-muted-foreground/75 uppercase">
+            semana floja o descarga, normal
           </span>
         </div>
       )}
