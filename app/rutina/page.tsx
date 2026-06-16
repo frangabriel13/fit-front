@@ -11,7 +11,13 @@ export const metadata: Metadata = {
 
 // Barra segmentada de semanas del macrociclo. El ancho lo define `className`
 // (compacto en desktop, full-width en móvil).
-function WeekBar({ className }: { className?: string }) {
+function WeekBar({
+  className,
+  segmentClassName = "h-6",
+}: {
+  className?: string
+  segmentClassName?: string
+}) {
   return (
     <div
       className={cn("flex gap-1", className)}
@@ -29,7 +35,8 @@ function WeekBar({ className }: { className?: string }) {
           <span
             key={i}
             className={cn(
-              "h-6 flex-1 rounded-full transition-colors",
+              "flex-1 rounded-full transition-colors",
+              segmentClassName,
               current && "bg-primary shadow-[0_0_12px_-2px] shadow-primary/60",
               past && "bg-primary/45",
               !current && !past && "bg-white/8"
@@ -45,7 +52,7 @@ export default function RutinaPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-32 md:pb-10 lg:px-6 lg:pt-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 pb-32 md:pt-8 md:pb-10 lg:px-6 lg:pt-10">
         <div className="fade-up mb-7 flex flex-col gap-4 [--delay:60ms] sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6 sm:gap-y-4">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold tracking-[0.28em] text-primary uppercase">
@@ -87,7 +94,7 @@ export default function RutinaPage() {
                 </span>
               </p>
             </div>
-            <WeekBar className="w-full" />
+            <WeekBar className="w-full" segmentClassName="h-2" />
           </div>
         </div>
 
