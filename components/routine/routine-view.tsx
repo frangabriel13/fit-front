@@ -136,11 +136,14 @@ function SheetRow({
         }}
         aria-expanded={expanded}
         aria-label={`Ver detalle de ${ex.name}`}
-        className={cn("cursor-pointer px-3 py-3 outline-none md:px-4", COLS)}
+        className={cn(
+          "flex cursor-pointer items-center gap-3 px-3 py-3 outline-none md:px-4",
+          COLS
+        )}
       >
         <NumberChip num={num} letter={letter} state={state} />
 
-        <div className="mt-2 min-w-0 md:mt-0">
+        <div className="min-w-0 flex-1">
           <span
             className={cn(
               "block truncate text-[15px] font-medium",
@@ -174,7 +177,7 @@ function SheetRow({
           {chains ? "→" : sheet(ex.rest)}
         </span>
 
-        <RowActions name={ex.name} state={state} className="mt-2 md:mt-0" />
+        <RowActions name={ex.name} state={state} className="shrink-0" />
       </div>
 
       {expanded && <RowDetail ex={ex} />}
@@ -329,21 +332,21 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
       <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <Link
           href="/rutina/entrenar"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 font-mono text-[11px] font-semibold tracking-[0.14em] text-primary-foreground uppercase shadow-[0_8px_24px_-12px] shadow-primary/60 transition-colors hover:bg-primary/90"
+          className="hidden items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 font-mono text-[11px] font-semibold tracking-[0.14em] text-primary-foreground uppercase shadow-[0_8px_24px_-12px] shadow-primary/60 transition-colors hover:bg-primary/90 md:inline-flex"
         >
           <Play className="size-3 fill-current" />
           Entrenar
         </Link>
         <button
           type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:bg-secondary hover:text-foreground"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2.5 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:bg-secondary hover:text-foreground md:py-2"
         >
           <RotateCcw className="size-3" />
           Reiniciar
         </button>
         <button
           type="button"
-          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground/70 uppercase transition-colors hover:bg-destructive/10 hover:text-destructive"
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2.5 font-mono text-[11px] tracking-[0.14em] text-muted-foreground/70 uppercase transition-colors hover:bg-destructive/10 hover:text-destructive md:py-2"
         >
           <X className="size-3" />
           No realizado
@@ -375,7 +378,7 @@ export function RoutineView() {
   return (
     <div>
       {/* Tabs tipográficos de día */}
-      <nav className="flex gap-6 overflow-x-auto border-b border-white/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav className="-mx-4 flex gap-6 overflow-x-auto border-b border-white/10 px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
         {ROUTINE.days.map((d, i) => (
           <button
             key={d.id}
@@ -449,7 +452,7 @@ export function RoutineView() {
             </>
           )}
         </div>
-        <span className="flex items-center gap-1.5">
+        <span className="hidden items-center gap-1.5 md:flex">
           {hasSession && (
             <button
               type="button"
@@ -523,6 +526,38 @@ export function RoutineView() {
             Día de ejemplo — editalo a gusto.
           </p>
         )}
+      </div>
+
+      {/* CTA de sesión fijo al pulgar (solo móvil) */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
+        <div className="flex items-center justify-between gap-4 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.7rem)]">
+          <div className="min-w-0">
+            <p className="truncate font-mono text-[10px] tracking-[0.18em] text-muted-foreground/70 uppercase">
+              Día {String(day.order).padStart(2, "0")} · {day.name}
+            </p>
+            <p className="mt-0.5 truncate text-[13px]">
+              {hasSession ? (
+                <span className="flex items-center gap-1.5 text-ember">
+                  <span className="inline-block size-1.5 animate-pulse rounded-full bg-ember" />
+                  En curso · {doneCount}/{day.exercises.length}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  {day.exercises.length} ejercicios · {day.focus}
+                </span>
+              )}
+            </p>
+          </div>
+          <Button
+            asChild
+            className="h-12 shrink-0 px-6 text-[12px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50"
+          >
+            <Link href="/rutina/entrenar">
+              <Play className="size-4 fill-current" />
+              {hasSession ? "Reanudar" : "Comenzar"}
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   )
