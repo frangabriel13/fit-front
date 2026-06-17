@@ -234,77 +234,113 @@ function RowDetail({ ex }: { ex: RoutineExercise }) {
     SESSION.logs[ex.name] ??
     Array.from({ length: ex.sets }, () => ({ status: "pending" as const }))
   const hist = HISTORY[ex.name]
+  const prevWeek = hist?.weeks.at(-1) ?? null
+  const hasPrev = prevWeek != null
+
+  // Toggle de la planilla: "Hoy" (con delta vs. la semana pasada) o la
+  // referencia cruda de la semana anterior, mismo formato. Una vista a la vez:
+  // entra cómodo en mobile sin amontonar las dos columnas.
+  const [view, setView] = useState<"today" | "prev">("today")
+  const showPrev = view === "prev" && hasPrev
 
   return (
     <div className="fade-up border-t border-border bg-card px-4 py-5 md:px-6 md:py-6">
       <div className="grid gap-4 md:grid-cols-2 md:gap-5">
-        {/* ── Registro de hoy + comparación con la semana anterior ── */}
+        {/* ── Planilla: Hoy / Sem. anterior (toggle, una vista a la vez) ── */}
         <section className="rounded-2xl bg-secondary p-4">
-          <div className="mb-3 flex items-baseline justify-between gap-3 px-2">
-            <p className="font-mono text-[10px] font-semibold tracking-[0.22em] text-primary uppercase">
-              Registro de hoy
-            </p>
-            <p className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground/55 uppercase">
+          <div className="mb-3 flex items-center gap-1.5 px-1">
+            <button
+              type="button"
+              onClick={() => setView("today")}
+              aria-pressed={!showPrev}
+              className={cn(
+                "cursor-pointer rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.16em] uppercase transition-colors",
+                !showPrev
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground/55 hover:text-foreground"
+              )}
+            >
+              Hoy
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("prev")}
+              disabled={!hasPrev}
+              aria-pressed={showPrev}
+              className={cn(
+                "rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.16em] uppercase transition-colors",
+                showPrev
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground/55 enabled:cursor-pointer enabled:hover:text-foreground disabled:opacity-35"
+              )}
+            >
               Sem. anterior
-            </p>
+            </button>
           </div>
 
-          <ul className="divide-y divide-border/50">
-            {logs.map((s, i) => {
-              const prev = hist?.weeks.at(-1)?.[i]
-              const delta = s.status === "done" ? setDelta(s, prev) : null
-              return (
-                <li
-                  key={i}
-                  className="grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-2.5 px-2 py-2.5"
-                >
-                  <span className="flex justify-center">
-                    <SetNode n={i + 1} status={s.status} />
-                  </span>
-
-                  {/* HOY — todo en una sola línea */}
-                  {s.status === "done" ? (
+          <ul
+            key={showPrev ? "prev" : "today"}
+            className="fade-up divide-y divide-border/50"
+          >
+            {showPrev && prevWeek
+              ? prevWeek.map((p, i) => (
+                  <li
+                    key={i}
+                    className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-3 px-2 py-2.5"
+                  >
+                    <span className="flex justify-center">
+                      <SetNode n={i + 1} status="done" />
+                    </span>
                     <div className="flex min-w-0 items-baseline gap-x-2">
                       <span className="font-mono text-[15px] tabular-nums whitespace-nowrap text-foreground">
-                        <span className="font-semibold">{s.weight}</span>
+                        <span className="font-semibold">{p.weight}</span>
                         <span className="text-[10px] text-muted-foreground/70"> kg</span>
-                        <span className="text-muted-foreground"> × {s.reps}</span>
+                        <span className="text-muted-foreground"> × {p.reps}</span>
                       </span>
-                      {s.rir != null && (
-                        <span className="hidden font-mono text-[10px] whitespace-nowrap text-muted-foreground/55 sm:inline">
-                          RIR {s.rir}
+                      <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground/55">
+                        RIR {p.rir}
+                      </span>
+                    </div>
+                  </li>
+                ))
+              : logs.map((s, i) => {
+                  const delta =
+                    s.status === "done" ? setDelta(s, prevWeek?.[i]) : null
+                  return (
+                    <li
+                      key={i}
+                      className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-3 px-2 py-2.5"
+                    >
+                      <span className="flex justify-center">
+                        <SetNode n={i + 1} status={s.status} />
+                      </span>
+
+                      {s.status === "done" ? (
+                        <div className="flex min-w-0 items-baseline gap-x-2">
+                          <span className="font-mono text-[15px] tabular-nums whitespace-nowrap text-foreground">
+                            <span className="font-semibold">{s.weight}</span>
+                            <span className="text-[10px] text-muted-foreground/70"> kg</span>
+                            <span className="text-muted-foreground"> × {s.reps}</span>
+                          </span>
+                          {s.rir != null && (
+                            <span className="font-mono text-[10px] whitespace-nowrap text-muted-foreground/55">
+                              RIR {s.rir}
+                            </span>
+                          )}
+                          {delta && <DeltaChip d={delta} />}
+                        </div>
+                      ) : s.status === "skipped" ? (
+                        <span className="font-mono text-[12px] text-muted-foreground italic line-through decoration-muted-foreground/40">
+                          omitida
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[12px] text-muted-foreground/45">
+                          pendiente
                         </span>
                       )}
-                      {delta && <DeltaChip d={delta} />}
-                    </div>
-                  ) : s.status === "skipped" ? (
-                    <span className="font-mono text-[12px] text-muted-foreground italic line-through decoration-muted-foreground/40">
-                      omitida
-                    </span>
-                  ) : (
-                    <span className="font-mono text-[12px] text-muted-foreground/45">
-                      pendiente
-                    </span>
-                  )}
-
-                  {/* SEM. ANTERIOR — referencia, alineada a la derecha */}
-                  <span className="justify-self-end font-mono text-[12px] tabular-nums whitespace-nowrap text-muted-foreground/75">
-                    {prev ? (
-                      <>
-                        {prev.weight}
-                        <span className="text-muted-foreground/45"> × {prev.reps}</span>
-                        <span className="hidden text-[10px] text-muted-foreground/45 sm:inline">
-                          {" "}
-                          · RIR {prev.rir}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground/30">—</span>
-                    )}
-                  </span>
-                </li>
-              )
-            })}
+                    </li>
+                  )
+                })}
           </ul>
         </section>
 
