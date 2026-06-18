@@ -31,12 +31,14 @@ const MOCK_USERS: MockUser[] = [
     id: "u_admin",
     email: "mansilla.franco.1@gmail.com",
     name: "Franco",
+    role: "trainer",
     password: "Frangabriel.13",
   },
   {
     id: "u_client",
     email: "diamela@fitness.com",
     name: "Diamela",
+    role: "client",
     password: "Diamela1234",
   },
 ]
@@ -47,7 +49,7 @@ const TOKEN_PREFIX = "mock-token."
 const SIMULATED_LATENCY_MS = 450
 
 function publicUser(u: MockUser): User {
-  return { id: u.id, email: u.email, name: u.name }
+  return { id: u.id, email: u.email, name: u.name, role: u.role }
 }
 
 function delay(ms: number): Promise<void> {
