@@ -1,9 +1,12 @@
 // Tipos que matchean el contrato de la API REST de NestJS.
 
+export type UserRole = "trainer" | "client"
+
 export interface User {
   id: string
   email: string
   name: string
+  role: UserRole
 }
 
 export interface DayExercise {
