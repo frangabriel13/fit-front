@@ -11,8 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- `npm run dev` — dev server on **port 3001** (`http://localhost:3001`)
-- `npm run build` / `npm run start` — production build / serve (also 3001)
+- `npm run dev` — dev server on **port 3002** (`http://localhost:3002`)
+- `npm run build` / `npm run start` — production build / serve (also 3002)
 - `npm run lint` — ESLint (flat config; the command is plain `eslint`, not `next lint`)
 
 There is no test runner configured.
