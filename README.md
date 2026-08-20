@@ -25,7 +25,7 @@ registrar entrenamientos serie por serie desde el celular.
 ```bash
 npm install
 cp .env.example .env.local   # y editá la URL de la API
-npm run dev                  # http://localhost:3001
+npm run dev                  # http://localhost:3002
 ```
 
 ## Variables de entorno
@@ -36,9 +36,9 @@ npm run dev                  # http://localhost:3001
 
 ## Scripts
 
-- `npm run dev` — servidor de desarrollo (puerto 3001)
+- `npm run dev` — servidor de desarrollo (puerto 3002)
 - `npm run build` — build de producción
-- `npm run start` — sirve el build (puerto 3001)
+- `npm run start` — sirve el build (puerto 3002)
 - `npm run lint` — ESLint
 
 ## Estructura
@@ -84,5 +84,5 @@ El JWT se guarda en una **cookie no httpOnly** (`fitfront_token`):
 
 ## Notas para la API
 
-La API debe permitir CORS desde el origen del front (`http://localhost:3001` en dev)
+La API debe permitir CORS desde el origen del front (`http://localhost:3002` en dev)
 e incluir el header `Authorization`.

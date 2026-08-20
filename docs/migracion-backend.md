@@ -66,7 +66,7 @@ Esto es importante para no rehacer trabajo:
 Sin esto, ninguna pantalla funciona. Es lo primero que el backend tiene que dejar listo.
 
 - [ ] **[BE]** API NestJS levantada y accesible en la URL de `NEXT_PUBLIC_API_URL` (hoy `http://localhost:3000`).
-- [ ] **[BE]** **CORS**: permitir el origen del front (`http://localhost:3001` en dev) y aceptar el header `Authorization`.
+- [ ] **[BE]** **CORS**: permitir el origen del front (`http://localhost:3002` en dev) y aceptar el header `Authorization`.
 - [ ] **[BE]** **Auth JWT por Bearer header**: cada request privada llega con `Authorization: Bearer <token>`. El backend valida el JWT y responde **401** si es inválido/expiró (el FE ya escucha el 401 y redirige a `/login`).
 - [ ] **[BE]** Forma de error consistente (al menos status HTTP correctos: 401 no autenticado, 403 sin permiso, 404 no existe, 400/422 validación).
 - [ ] **[FE]** Apagar el mock: `NEXT_PUBLIC_USE_MOCKS=false` en `.env.local` (hacerlo recién cuando `/auth/*` exista, ver Login).

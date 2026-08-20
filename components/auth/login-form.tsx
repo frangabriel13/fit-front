@@ -76,7 +76,7 @@ export function LoginForm() {
                   inputMode="email"
                   autoComplete="email"
                   placeholder="vos@email.com"
-                  className="h-11 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
+                  className="h-12 border-white/10 bg-white/[0.03] px-3.5 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
                   {...field}
                   onChange={(e) => {
                     setAuthError(null)
@@ -113,7 +113,7 @@ export function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    className="h-11 border-white/10 bg-white/[0.03] px-3.5 pr-11 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
+                    className="h-12 border-white/10 bg-white/[0.03] px-3.5 pr-12 placeholder:text-muted-foreground/40 focus-visible:border-primary/45 focus-visible:ring-0 focus-visible:shadow-[0_0_0_3px] focus-visible:shadow-primary/10"
                     {...field}
                     onChange={(e) => {
                       setAuthError(null)
@@ -152,7 +152,7 @@ export function LoginForm() {
         />
         <Button
           type="submit"
-          className="h-11 w-full text-[13px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-8px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
+          className="h-12 w-full text-[13px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-8px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
           disabled={login.isPending}
         >
           {login.isPending && <Loader2 className="animate-spin" />}
