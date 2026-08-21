@@ -5,7 +5,6 @@ import Link from "next/link"
 import { ArrowDown, ArrowUp, Check, Minus, Play, RotateCcw, X } from "lucide-react"
 
 import {
-  exerciseState,
   HISTORY,
   ROUTINE,
   SESSION,
@@ -14,6 +13,7 @@ import {
   type RoutineExercise,
   type SetEntry,
 } from "@/lib/routine-data"
+import { exerciseState } from "@/lib/training-math"
 // (piezas compartidas de planilla en sheet-bits)
 import {
   ProgressionRail,
