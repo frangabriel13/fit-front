@@ -7,9 +7,9 @@ import {
   HISTORY,
   MACROCYCLE,
   SESSION,
-  topE1RM,
   type RoutineExercise,
 } from "@/lib/routine-data"
+import { topE1RM } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
 
 /** Abreviaturas de planilla: "10 a 12" → "10-12", "0 o fallo" → "0-F". */

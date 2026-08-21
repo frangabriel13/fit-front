@@ -1,8 +1,16 @@
+import {
+  topWeight,
+  type HistSet,
+  type SetEntry,
+} from "@/lib/training-math"
+
 // ⚠️ Rutina HARDCODEADA (placeholder).
 // El Día 1 (Pierna) es la rutina real de Diamela.
 // Los días 2-4 son de ejemplo para editar luego.
 // La sesión en curso y el historial también son mock (sin backend).
 // Reemplazar por datos de la API cuando exista el backend.
+
+export type { ExerciseState, HistSet, SetEntry, SetStatus } from "@/lib/training-math"
 
 export interface RoutineExercise {
   name: string
@@ -134,15 +142,6 @@ export const ROUTINE: {
 //  Sesión en curso + historial (mock) — para diseñar anotaciones y comparación
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type SetStatus = "done" | "skipped" | "pending"
-
-export interface SetEntry {
-  weight?: number
-  reps?: number
-  rir?: number
-  status: SetStatus
-}
-
 /** Registros de la sesión de hoy, por nombre de ejercicio. Solo Día 1. */
 export const SESSION: {
   dayId: string
@@ -163,13 +162,6 @@ export const SESSION: {
       { status: "pending" },
     ],
   },
-}
-
-export interface HistSet {
-  weight: number
-  reps: number
-  /** RIR / esfuerzo real registrado en esa serie. */
-  rir: number
 }
 
 /**
@@ -330,41 +322,7 @@ export const HISTORY: Record<string, { weeks: HistSet[][] }> = {
  */
 export const MACROCYCLE = { week: 5, totalWeeks: 6 }
 
-// ── Helpers de estado/tendencia ──────────────────────────────────────────────
-
-export type ExerciseState = "pending" | "in-progress" | "done"
-
-export function exerciseState(sets?: SetEntry[]): ExerciseState {
-  if (!sets || sets.every((s) => s.status === "pending")) return "pending"
-  if (sets.every((s) => s.status !== "pending")) return "done"
-  return "in-progress"
-}
-
-export function topWeight(sets: { weight?: number }[]): number | null {
-  const ws = sets.map((s) => s.weight).filter((w): w is number => w != null)
-  return ws.length ? Math.max(...ws) : null
-}
-
-/**
- * 1RM estimado (fórmula de Epley): convierte "peso × reps" en una sola carga
- * comparable. Así una mejora en repeticiones al mismo peso también cuenta como
- * progreso. Es una estimación (pierde precisión con reps muy altas).
- */
-export function e1rm(weight: number, reps: number): number {
-  return weight * (1 + reps / 30)
-}
-
-/** Mejor 1RM estimado entre las series (la serie "tope" real, no la más pesada). */
-export function topE1RM(
-  sets: { weight?: number; reps?: number }[]
-): number | null {
-  const vals = sets
-    .map((s) =>
-      s.weight != null && s.reps != null ? e1rm(s.weight, s.reps) : null
-    )
-    .filter((v): v is number => v != null)
-  return vals.length ? Math.max(...vals) : null
-}
+// ── Consultas sobre los mocks ────────────────────────────────────────────────
 
 /** Tendencia compacta: hoy vs semana pasada; si no empezó, último peso usado. */
 export function exerciseTrend(name: string): {
