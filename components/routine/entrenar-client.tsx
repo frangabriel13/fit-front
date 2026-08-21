@@ -41,11 +41,14 @@ import { cn } from "@/lib/utils"
 // esquema "tablero": la comparación contra la semana anterior vive siempre a la
 // vista, el 1RM estimado se recalcula mientras cargás, y un único stepper apunta
 // a la celda que tocaste (peso o reps) para dejar lugar a números grandes.
-// El código de color sigue al de /rutina: CYAN (--primary) es la estructura y
-// la acción — riel del día, series cerradas, botón principal, navegación —, y
-// ÁMBAR (--ember) queda SOLO para el estado "en curso": la serie que estás
-// cargando, la celda enfocada, el RIR elegido y el descanso corriendo. Al
-// completar el ejercicio el ámbar se apaga y todo pasa a cyan.
+// Código de color "monocromo filo": el CYAN (--primary) es el único que
+// colorea, y marca DÓNDE ESTÁS AHORA — la celda que cargás, el RIR elegido, la
+// serie en curso, el botón. Lo hecho baja a neutro (--done / --muted-foreground)
+// y el ámbar no se usa acá.
+// La regla es que ningún estado se apoya en la opacidad: un tinte al 5% sobre
+// este fondo no se lee como estado, se lee como mancha. El estado lo hacen el
+// RELLENO (donde estás cargando) y el BORDE (lo que acompaña), sobre la escala
+// opaca de globals.css: surface / surface-raised / hairline / edge / faint.
 // Todo vive en memoria — al recargar se pierde. La persistencia llega al
 // cablear a la API (como use-sessions en /splits). Deriva el plan de ROUTINE +
 // WORKOUT_POSITION; cambiá WORKOUT_POSITION.exerciseName para previsualizar la
@@ -134,50 +137,10 @@ const STEPS: Record<Field, number[]> = {
 // ─── piezas visuales ─────────────────────────────────────────────────────────
 
 /**
- * Dial de avance del ejercicio: el tramo cerrado en cyan, la serie/vuelta en
- * curso en ámbar, lo que falta apagado. Un conic-gradient con un disco del color
- * del fondo encima evita tener que dibujar un SVG.
- */
-function Dial({
-  done,
-  total,
-  active,
-  unit,
-}: {
-  done: number
-  total: number
-  active: boolean
-  unit: string
-}) {
-  const seg = 360 / Math.max(1, total)
-  const closed = done * seg
-  const current = active ? closed + seg : closed
-
-  return (
-    <div
-      aria-hidden
-      className="relative size-[clamp(66px,21cqi,84px)] shrink-0 rounded-full"
-      style={{
-        background: `conic-gradient(var(--primary) 0deg ${closed}deg, color-mix(in oklch, var(--ember) 85%, transparent) ${closed}deg ${current}deg, oklch(1 0 0 / 7%) ${current}deg 360deg)`,
-      }}
-    >
-      <div className="absolute inset-[9px] flex flex-col items-center justify-center rounded-full bg-background">
-        <p className="font-display text-2xl leading-none tabular-nums">
-          {done}
-          <span className="text-sm text-muted-foreground">/{total}</span>
-        </p>
-        <p className="mt-0.5 font-mono text-[8px] tracking-[0.16em] text-muted-foreground/75 uppercase">
-          {unit}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/**
  * Celda grande y tipeable. Tocarla la vuelve el blanco del stepper compartido;
  * el número sigue siendo un <input> (tocás y escribís, foco selecciona todo)
- * para que cargar 82.5 no cueste quince toques.
+ * para que cargar 82.5 no cueste quince toques. La enfocada se RELLENA con el
+ * acento y el número se invierte: se ve de reojo, con el celular en el piso.
  */
 function ValueTile({
   label,
@@ -199,15 +162,13 @@ function ValueTile({
       onClick={onFocus}
       className={cn(
         "rounded-2xl border px-4 pt-3 pb-3.5 transition-colors",
-        active
-          ? "border-ember/35 bg-ember/[0.07]"
-          : "border-white/10 bg-white/[0.02]"
+        active ? "border-primary bg-primary" : "border-hairline bg-surface"
       )}
     >
       <p
         className={cn(
           "font-mono text-[9px] font-semibold tracking-[0.2em] uppercase transition-colors",
-          active ? "text-ember" : "text-muted-foreground/75"
+          active ? "text-on-primary-soft" : "text-faint"
         )}
       >
         <span className="block truncate">{label}</span>
@@ -222,7 +183,12 @@ function ValueTile({
           onFocus()
           e.target.select()
         }}
-        className="mt-1 w-full min-w-0 bg-transparent font-display text-[clamp(36px,11.8cqi,46px)] leading-none tracking-tight tabular-nums text-foreground caret-ember outline-none placeholder:text-muted-foreground/25"
+        className={cn(
+          "mt-1 w-full min-w-0 bg-transparent font-display text-[clamp(36px,11.8cqi,46px)] leading-none tracking-tight tabular-nums outline-none",
+          active
+            ? "text-primary-foreground caret-primary-foreground placeholder:text-on-primary-soft"
+            : "text-foreground caret-primary placeholder:text-faint"
+        )}
       />
     </div>
   )
@@ -252,7 +218,7 @@ function StepBar({
           aria-label={field === "weight" ? "Bajar peso" : "Bajar repeticiones"}
           onClick={onDec}
           disabled={!canDec}
-          className="flex h-13 items-center justify-center rounded-2xl border border-white/12 bg-white/[0.02] text-muted-foreground transition-colors enabled:cursor-pointer enabled:hover:border-white/30 enabled:hover:text-foreground disabled:opacity-35"
+          className="flex h-14 items-center justify-center rounded-2xl border border-edge bg-surface text-muted-foreground transition-colors enabled:cursor-pointer enabled:hover:border-primary enabled:hover:text-foreground disabled:opacity-35"
         >
           <Minus className="size-5" />
         </button>
@@ -265,10 +231,10 @@ function StepBar({
               onClick={() => onStep(v)}
               aria-pressed={step === v}
               className={cn(
-                "flex h-13 cursor-pointer items-center justify-center rounded-xl border font-mono text-xs font-semibold tabular-nums transition-colors",
+                "flex h-14 cursor-pointer items-center justify-center rounded-xl border font-mono text-xs font-semibold tabular-nums transition-colors",
                 step === v
-                  ? "border-ember/35 bg-ember/15 text-foreground"
-                  : "border-white/10 bg-white/[0.02] text-muted-foreground/70 hover:text-foreground"
+                  ? "border-primary bg-surface-raised text-foreground"
+                  : "border-hairline bg-surface text-muted-foreground hover:text-foreground"
               )}
             >
               ± {v}
@@ -280,19 +246,19 @@ function StepBar({
           type="button"
           aria-label={field === "weight" ? "Subir peso" : "Subir repeticiones"}
           onClick={onInc}
-          className="flex h-13 cursor-pointer items-center justify-center rounded-2xl border border-ember/35 bg-ember/[0.07] text-ember transition-colors hover:bg-ember/15"
+          className="flex h-14 cursor-pointer items-center justify-center rounded-2xl border border-primary bg-surface-raised text-primary transition-colors hover:bg-accent"
         >
           <Plus className="size-5" />
         </button>
       </div>
-      <p className="mt-2 text-center font-mono text-[9px] tracking-[0.16em] text-muted-foreground/60 uppercase">
+      <p className="mt-2 text-center font-mono text-[9px] tracking-[0.16em] text-faint uppercase">
         el control ajusta {field === "weight" ? "el peso" : "las repeticiones"}
       </p>
     </>
   )
 }
 
-/** RIR como escala: la barra crece en el valor elegido, con la palabra al lado. */
+/** RIR como fila de pastillas: la elegida se rellena, el resto queda plano. */
 const RIR_WORDS = ["al fallo", "casi al fallo", "exigente", "cómoda", "sobra"]
 
 function RirScale({
@@ -303,12 +269,12 @@ function RirScale({
   onPick: (n: number) => void
 }) {
   return (
-    <div className="mt-4 border-t border-white/8 pt-4">
+    <div className="mt-4 border-t border-hairline pt-4">
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] font-semibold tracking-[0.2em] text-muted-foreground/75 uppercase">
+        <span className="font-mono text-[9px] font-semibold tracking-[0.2em] text-faint uppercase">
           RIR
         </span>
-        <span className="font-mono text-[9px] tracking-[0.06em] text-ember uppercase">
+        <span className="font-mono text-[9px] tracking-[0.06em] text-primary uppercase">
           {value != null ? RIR_WORDS[value] : "sin marcar"}
         </span>
       </div>
@@ -321,22 +287,14 @@ function RirScale({
               type="button"
               onClick={() => onPick(n)}
               aria-pressed={on}
-              className="flex h-11 cursor-pointer flex-col items-center justify-end gap-1.5 rounded-lg"
+              className={cn(
+                "flex h-12 cursor-pointer items-center justify-center rounded-xl border font-mono text-[15px] tabular-nums transition-colors",
+                on
+                  ? "border-primary bg-primary font-bold text-primary-foreground"
+                  : "border-hairline bg-surface text-muted-foreground hover:text-foreground"
+              )}
             >
-              <span
-                className={cn(
-                  "font-mono text-xs tabular-nums transition-colors",
-                  on ? "text-foreground" : "text-muted-foreground/65"
-                )}
-              >
-                {n}
-              </span>
-              <span
-                className={cn(
-                  "w-full rounded-[3px] transition-all",
-                  on ? "h-3.5 bg-ember" : "h-1.5 bg-white/12"
-                )}
-              />
+              {n}
             </button>
           )
         })}
@@ -376,13 +334,13 @@ function RestTimer({
   const pct = total > 0 ? Math.max(0, Math.min(100, (left / total) * 100)) : 0
 
   return (
-    <div className="fade-up overflow-hidden rounded-2xl border border-ember/25 bg-ember/[0.07]">
+    <div className="fade-up overflow-hidden rounded-2xl border border-edge bg-surface">
       <div className="flex items-center gap-3 px-3 py-2.5">
-        <span className="text-ember">
+        <span className="text-primary">
           <Timer className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[9px] font-semibold tracking-[0.2em] text-ember uppercase">
+          <p className="font-mono text-[9px] font-semibold tracking-[0.2em] text-primary uppercase">
             Descanso
           </p>
           <p className="font-display text-[22px] leading-none tabular-nums text-foreground">
@@ -392,22 +350,22 @@ function RestTimer({
         <button
           type="button"
           onClick={() => setLeft((s) => Math.max(0, s - 15))}
-          className="h-11 shrink-0 cursor-pointer rounded-full border border-white/15 px-3 font-mono text-[10px] tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:border-white/35 hover:text-foreground"
+          className="h-11 shrink-0 cursor-pointer rounded-full border border-edge px-3 font-mono text-[10px] tracking-[0.1em] text-muted-foreground uppercase transition-colors hover:border-primary hover:text-foreground"
         >
           −15s
         </button>
         <button
           type="button"
           onClick={onSkip}
-          className="h-11 shrink-0 cursor-pointer rounded-full bg-ember/15 px-3.5 font-mono text-[10px] font-semibold tracking-[0.1em] text-ember uppercase transition-colors hover:bg-ember/25"
+          className="h-11 shrink-0 cursor-pointer rounded-full border border-primary bg-surface-raised px-3.5 font-mono text-[10px] font-semibold tracking-[0.1em] text-primary uppercase transition-colors hover:bg-accent"
         >
           Seguir
         </button>
       </div>
       {/* Barra que drena con el tiempo */}
-      <div className="h-1 w-full bg-ember/10">
+      <div className="h-1 w-full bg-hairline">
         <div
-          className="h-full bg-ember transition-[width] duration-1000 ease-linear"
+          className="h-full bg-primary transition-[width] duration-1000 ease-linear"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -419,19 +377,19 @@ function RestTimer({
 function SetRecord({ s }: { s: SetEntry }) {
   if (s.status === "done")
     return (
-      <span className="text-foreground/90">
+      <span className="text-foreground">
         {s.weight}
-        <span className="text-muted-foreground"> × </span>
+        <span className="text-faint"> × </span>
         {s.reps}
       </span>
     )
   if (s.status === "skipped")
     return (
-      <span className="text-muted-foreground/70 italic line-through decoration-muted-foreground/40">
+      <span className="text-faint italic line-through decoration-faint">
         omitida
       </span>
     )
-  return <span className="text-muted-foreground/45">—</span>
+  return <span className="text-faint">—</span>
 }
 
 /** Encabezado plegable: <details> nativo con chevron que rota al abrir. */
@@ -448,7 +406,7 @@ function Disclosure({
 }) {
   return (
     <details
-      className="group fade-up border-t border-white/10"
+      className="group fade-up border-t border-hairline"
       style={{ "--delay": delay } as CSSProperties}
     >
       <summary className="flex cursor-pointer list-none items-center justify-between py-4 [&::-webkit-details-marker]:hidden">
@@ -458,7 +416,7 @@ function Disclosure({
           </span>
           {meta}
         </span>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
+        <ChevronRight className="size-4 shrink-0 text-faint transition-transform group-open:rotate-90" />
       </summary>
       <div className="pb-5">{children}</div>
     </details>
@@ -552,7 +510,6 @@ export function EntrenarClient() {
     if (entries.every((e) => e.status === "skipped")) return "skipped"
     return "pending"
   })
-  const doneUnits = unitStatuses.filter((s) => s === "done").length
   const allClosed = unitStatuses.every((s) => s !== "pending")
 
   const currentSlotState: ExerciseState = unitStatuses.every((s) => s === "done")
@@ -676,7 +633,7 @@ export function EntrenarClient() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-5 pb-10 [container-type:inline-size]">
       {/* Barra superior — sticky para conservar contexto al hacer scroll */}
-      <div className="sticky top-0 z-20 -mx-5 grid h-14 grid-cols-[1fr_auto_1fr] items-center border-b bg-background/95 px-5 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="sticky top-0 z-20 -mx-5 grid h-14 grid-cols-[1fr_auto_1fr] items-center border-b border-hairline bg-background px-5">
         <Link
           href="/rutina"
           aria-label="Volver a la rutina"
@@ -684,10 +641,10 @@ export function EntrenarClient() {
         >
           <ArrowLeft className="size-[18px]" />
         </Link>
-        <p className="justify-self-center font-mono text-[11px] font-semibold tracking-[0.22em] whitespace-nowrap text-primary uppercase">
+        <p className="justify-self-center font-mono text-[11px] font-semibold tracking-[0.22em] whitespace-nowrap text-muted-foreground uppercase">
           Día {String(day.order).padStart(2, "0")} — {day.name}
         </p>
-        <span className="justify-self-end font-mono text-[11px] tabular-nums text-muted-foreground">
+        <span className="justify-self-end font-mono text-[11px] tabular-nums text-faint">
           {slot.num}/{String(slots.length).padStart(2, "0")}
         </span>
       </div>
@@ -704,21 +661,22 @@ export function EntrenarClient() {
               className={cn(
                 "h-1.5 flex-1 rounded-full transition-all",
                 current
-                  ? "h-2 bg-primary shadow-[0_0_12px_-2px] shadow-primary/60"
+                  ? "h-2 bg-primary"
                   : st === "done"
-                    ? "bg-primary/45"
+                    ? "bg-done"
                     : st === "in-progress"
-                      ? "bg-ember/60"
-                      : "bg-white/10"
+                      ? "bg-edge"
+                      : "bg-hairline"
               )}
             />
           )
         })}
       </div>
 
-      {/* Cabecera: identidad del ejercicio + dial de avance */}
-      <div className="fade-up flex items-center gap-3.5 pb-3.5 [--delay:40ms]">
-        <div className="min-w-0 flex-1">
+      {/* Cabecera: identidad del ejercicio. Sin dial — el título se queda con
+          el ancho completo y el avance ya lo cuenta la matriz de más abajo. */}
+      <div className="fade-up pb-3.5 [--delay:40ms]">
+        <div className="min-w-0">
           <p className="font-mono text-[10px] font-semibold tracking-[0.26em] text-primary uppercase">
             Ejercicio {slot.num}
             {isSuper && ` · ${members.length === 2 ? "biserie" : "superserie"}`}
@@ -732,14 +690,14 @@ export function EntrenarClient() {
                   <h1
                     key={it.ex.name}
                     className={cn(
-                      "font-display text-[clamp(17px,5.2cqi,21px)] leading-[1.05] uppercase",
-                      isActive ? "text-foreground" : "text-muted-foreground/35"
+                      "font-display text-[clamp(19px,6.2cqi,25px)] leading-[1.05] uppercase",
+                      isActive ? "text-foreground" : "text-faint"
                     )}
                   >
                     <span
                       className={cn(
                         "mr-1.5 text-[0.7em]",
-                        isActive ? "text-ember" : "text-muted-foreground/35"
+                        isActive ? "text-primary" : "text-faint"
                       )}
                     >
                       {it.letter}
@@ -750,7 +708,7 @@ export function EntrenarClient() {
               })}
             </div>
           ) : (
-            <h1 className="mt-2 font-display text-[clamp(21px,6.9cqi,28px)] leading-[0.98] uppercase">
+            <h1 className="mt-2 font-display text-[clamp(26px,9.4cqi,38px)] leading-[0.95] uppercase">
               {ex.name}
             </h1>
           )}
@@ -761,12 +719,6 @@ export function EntrenarClient() {
           </p>
         </div>
 
-        <Dial
-          done={doneUnits}
-          total={rounds}
-          active={!allClosed}
-          unit={isSuper ? "vueltas" : "series"}
-        />
       </div>
 
       {/* Referencia: la semana anterior y lo de hoy en una sola tarjeta —
@@ -789,16 +741,16 @@ export function EntrenarClient() {
                   reps: String(refSet.reps),
                 }))
               }
-              className="flex cursor-pointer flex-col gap-1 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-left transition-colors hover:border-white/25"
+              className="flex cursor-pointer flex-col gap-1 rounded-xl border border-hairline bg-surface px-3 py-2.5 text-left transition-colors hover:border-edge"
             >
-              <span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground/70 uppercase">
+              <span className="font-mono text-[9px] tracking-[0.18em] text-faint uppercase">
                 Semana {MACROCYCLE.week - 1}
               </span>
-              <span className="font-mono text-sm tabular-nums text-foreground/60">
+              <span className="font-mono text-sm tabular-nums text-muted-foreground">
                 {refSet.weight} kg × {refSet.reps}
               </span>
               <span className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-[9px] tabular-nums text-muted-foreground/65">
+                <span className="font-mono text-[9px] tabular-nums text-faint">
                   1RM {refE1rm}
                 </span>
                 <span className="inline-flex items-center gap-1 font-mono text-[9px] tracking-[0.1em] text-primary uppercase">
@@ -808,25 +760,22 @@ export function EntrenarClient() {
               </span>
             </button>
 
-            <span aria-hidden className="bg-white/8" />
+            <span aria-hidden className="bg-hairline" />
           </>
         )}
 
         <div className="flex flex-col gap-1 py-2.5">
           <span
-            className={cn(
-              "font-mono text-[9px] font-semibold tracking-[0.18em] uppercase",
-              allClosed ? "text-primary" : "text-ember"
-            )}
+            className="font-mono text-[9px] font-semibold tracking-[0.18em] text-primary uppercase"
           >
-            Hoy · {unit} {cursor.round + 1}
+            Hoy · {unit} {cursor.round + 1}/{rounds}
             {isSuper && ` — ${activeMember.letter}`}
           </span>
           <span className="font-mono text-sm tabular-nums text-foreground">
             {draft.weight || "—"} kg × {draft.reps || "—"}
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="font-mono text-[9px] tabular-nums text-muted-foreground/65">
+            <span className="font-mono text-[9px] tabular-nums text-faint">
               1RM {liveE1rm ?? "—"}
             </span>
             {e1rmDelta != null && (
@@ -834,8 +783,8 @@ export function EntrenarClient() {
                 className={cn(
                   "inline-flex items-center rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums",
                   e1rmDelta > 0
-                    ? "bg-primary/15 text-primary"
-                    : "bg-white/[0.06] text-muted-foreground"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface-raised text-muted-foreground"
                 )}
               >
                 {e1rmDelta > 0
@@ -900,13 +849,13 @@ export function EntrenarClient() {
               key={r}
               className={cn(
                 "flex flex-col overflow-hidden rounded-xl border transition-colors",
-                st === "done"
-                  ? "border-primary/25 bg-primary/[0.05]"
-                  : current
-                    ? "border-ember/35 bg-ember/[0.07]"
+                current
+                  ? "border-primary bg-surface-raised"
+                  : st === "done"
+                    ? "border-hairline bg-surface"
                     : st === "skipped"
-                      ? "border-white/10"
-                      : "border-dashed border-white/10"
+                      ? "border-hairline bg-surface"
+                      : "border-dashed border-hairline bg-surface"
               )}
             >
               <button
@@ -917,11 +866,11 @@ export function EntrenarClient() {
                 <span
                   className={cn(
                     "font-mono text-[9px] font-semibold tracking-[0.16em] uppercase",
-                    st === "done"
+                    current
                       ? "text-primary"
-                      : current
-                        ? "text-ember"
-                        : "text-muted-foreground/65"
+                      : st === "done"
+                        ? "text-muted-foreground"
+                        : "text-faint"
                   )}
                 >
                   {isSuper ? "Vuelta" : "Serie"} {r + 1}
@@ -930,7 +879,7 @@ export function EntrenarClient() {
                   {members.map((it, mi) => (
                     <span key={it.ex.name} className="block truncate">
                       {isSuper && (
-                        <span className="mr-1 text-primary/70">{it.letter}</span>
+                        <span className="mr-1 text-faint">{it.letter}</span>
                       )}
                       <SetRecord s={entries[mi]} />
                     </span>
@@ -942,7 +891,7 @@ export function EntrenarClient() {
               {st !== "pending" && (
                 <div
                   className={cn(
-                    "mt-auto grid border-t border-white/8 text-muted-foreground/50",
+                    "mt-auto grid border-t border-hairline text-faint",
                     st === "done" ? "grid-cols-2" : "grid-cols-1"
                   )}
                 >
@@ -959,7 +908,7 @@ export function EntrenarClient() {
                       type="button"
                       aria-label={`Marcar ${unit} ${r + 1} como no hecha`}
                       onClick={() => omitRound(r)}
-                      className="inline-flex h-11 cursor-pointer items-center justify-center border-l border-white/8 transition-colors hover:text-destructive"
+                      className="inline-flex h-11 cursor-pointer items-center justify-center border-l border-hairline transition-colors hover:text-destructive"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -978,7 +927,7 @@ export function EntrenarClient() {
             eyebrow="Progresión"
             delay="240ms"
             meta={
-              <span className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground/60 uppercase">
+              <span className="font-mono text-[10px] tracking-[0.06em] text-faint uppercase">
                 top set
               </span>
             }
@@ -989,7 +938,7 @@ export function EntrenarClient() {
       )}
 
       {/* Navegación entre ejercicios + reset */}
-      <div className="fade-up mt-5 border-t border-white/10 pt-5 [--delay:280ms]">
+      <div className="fade-up mt-5 border-t border-hairline pt-5 [--delay:280ms]">
         <div className="flex items-center justify-between gap-4 font-mono text-[11px] tracking-[0.14em] uppercase">
           {prevSlot ? (
             <Link
@@ -1001,7 +950,7 @@ export function EntrenarClient() {
                 {prevSlot.num} {slotTitle(prevSlot)}
               </span>
               {slotState(prevSlot) === "done" && (
-                <span className="shrink-0 text-primary">✓</span>
+                <span className="shrink-0 text-muted-foreground">✓</span>
               )}
             </Link>
           ) : (
@@ -1025,7 +974,7 @@ export function EntrenarClient() {
           <button
             type="button"
             onClick={resetExercise}
-            className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground/50 uppercase transition-colors hover:text-destructive"
+            className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] text-faint uppercase transition-colors hover:text-destructive"
           >
             <RotateCcw className="size-3" />
             Reiniciar ejercicio
@@ -1034,7 +983,7 @@ export function EntrenarClient() {
       </div>
 
       {/* Pie fijo: durante el descanso el temporizador ocupa el lugar del CTA */}
-      <div className="sticky bottom-0 z-20 -mx-5 mt-auto border-t border-white/10 bg-background/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 z-20 -mx-5 mt-auto border-t border-edge bg-background px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {resting ? (
           <RestTimer
             rest={ex.rest}
@@ -1045,7 +994,7 @@ export function EntrenarClient() {
           <div className="flex items-center gap-3">
             <Button
               asChild
-              className="h-12 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
+              className="h-14 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
             >
               <Link href="/rutina/entrenar">
                 <span className="truncate">
@@ -1060,7 +1009,7 @@ export function EntrenarClient() {
               type="button"
               aria-label="Reiniciar ejercicio"
               onClick={resetExercise}
-              className="inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/15 text-muted-foreground transition-colors hover:text-foreground"
+              className="inline-flex size-14 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-edge text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
             >
               <RotateCcw className="size-4" />
             </button>
@@ -1070,7 +1019,7 @@ export function EntrenarClient() {
             <Button
               onClick={completeUnit}
               disabled={!canComplete}
-              className="h-12 min-w-0 flex-1 text-[12px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50"
+              className="h-14 min-w-0 flex-1 text-[12px] font-semibold tracking-[0.16em] uppercase"
             >
               <Check className="size-4" />
               <span className="truncate">Completar {unit}</span>
@@ -1078,7 +1027,7 @@ export function EntrenarClient() {
             <button
               type="button"
               onClick={skipUnit}
-              className="h-12 shrink-0 cursor-pointer rounded-lg border border-white/12 px-4 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:border-white/30 hover:text-foreground"
+              className="h-14 shrink-0 cursor-pointer rounded-lg border border-edge px-4 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:border-primary hover:text-foreground"
             >
               Omitir
             </button>
