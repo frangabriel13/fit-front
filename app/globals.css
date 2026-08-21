@@ -8,6 +8,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-ember: var(--ember);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-hairline: var(--hairline);
+  --color-edge: var(--edge);
+  --color-faint: var(--faint);
+  --color-done: var(--done);
+  --color-on-primary-soft: var(--on-primary-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
@@ -74,6 +81,24 @@
   --accent-foreground: oklch(0.97 0.005 220);
   --destructive: oklch(0.704 0.191 22.216);
   --ember: oklch(0.82 0.16 78);
+
+  /*
+   * Escala OPACA del modo entrenamiento. Reemplaza la capa translúcida
+   * (bg-white/[0.02], bg-ember/[0.07], border-white/10, muted-foreground/25…):
+   * un tinte al 5% sobre este fondo no se lee como estado, se lee como mancha.
+   * Acá el estado lo hacen el relleno y el borde, nunca la opacidad.
+   *   surface/surface-raised → superficies      hairline/edge → bordes
+   *   faint                  → 4.9:1 sobre el fondo (el /25 viejo daba 2.7:1)
+   *   done                   → marca neutra de "hecho", 3.2:1 (no textual)
+   *   on-primary-soft        → etiqueta sobre un relleno --primary, 6.0:1
+   */
+  --surface: oklch(0.215 0.014 230);
+  --surface-raised: oklch(0.262 0.016 230);
+  --hairline: oklch(0.245 0.015 230);
+  --edge: oklch(0.315 0.018 230);
+  --faint: oklch(0.6 0.018 225);
+  --done: oklch(0.5 0.03 222);
+  --on-primary-soft: oklch(0.355 0.064 219);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.797 0.134 211.5);
@@ -110,6 +135,24 @@
   --accent-foreground: oklch(0.97 0.005 220);
   --destructive: oklch(0.704 0.191 22.216);
   --ember: oklch(0.82 0.16 78);
+
+  /*
+   * Escala OPACA del modo entrenamiento. Reemplaza la capa translúcida
+   * (bg-white/[0.02], bg-ember/[0.07], border-white/10, muted-foreground/25…):
+   * un tinte al 5% sobre este fondo no se lee como estado, se lee como mancha.
+   * Acá el estado lo hacen el relleno y el borde, nunca la opacidad.
+   *   surface/surface-raised → superficies      hairline/edge → bordes
+   *   faint                  → 4.9:1 sobre el fondo (el /25 viejo daba 2.7:1)
+   *   done                   → marca neutra de "hecho", 3.2:1 (no textual)
+   *   on-primary-soft        → etiqueta sobre un relleno --primary, 6.0:1
+   */
+  --surface: oklch(0.215 0.014 230);
+  --surface-raised: oklch(0.262 0.016 230);
+  --hairline: oklch(0.245 0.015 230);
+  --edge: oklch(0.315 0.018 230);
+  --faint: oklch(0.6 0.018 225);
+  --done: oklch(0.5 0.03 222);
+  --on-primary-soft: oklch(0.355 0.064 219);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.797 0.134 211.5);
