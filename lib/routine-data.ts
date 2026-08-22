@@ -1,8 +1,4 @@
-import {
-  topWeight,
-  type HistSet,
-  type SetEntry,
-} from "@/lib/training-math"
+import type { HistSet, SetEntry } from "@/lib/training-math"
 
 // ⚠️ Rutina HARDCODEADA (placeholder).
 // El Día 1 (Pierna) es la rutina real de Diamela.
@@ -321,23 +317,6 @@ export const HISTORY: Record<string, { weeks: HistSet[][] }> = {
  * semana `week` es la de hoy (en curso, vía SESSION).
  */
 export const MACROCYCLE = { week: 5, totalWeeks: 6 }
-
-// ── Consultas sobre los mocks ────────────────────────────────────────────────
-
-/** Tendencia compacta: hoy vs semana pasada; si no empezó, último peso usado. */
-export function exerciseTrend(name: string): {
-  label: string
-  delta: number | null
-} {
-  const hist = HISTORY[name]
-  if (!hist) return { label: "—", delta: null }
-  const last = topWeight(hist.weeks.at(-1) ?? [])
-  const today = topWeight(SESSION.logs[name] ?? [])
-  if (today != null && last != null) {
-    return { label: `${today} kg`, delta: today - last }
-  }
-  return { label: last != null ? `últ. ${last} kg` : "—", delta: null }
-}
 
 /**
  * Puntero del modo entrenamiento (mock). Cambiá exerciseName para

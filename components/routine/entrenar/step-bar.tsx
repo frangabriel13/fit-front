@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { cn } from "@/lib/utils"
 import type { Field } from "./types"
 
@@ -69,9 +70,9 @@ export function StepBar({
           <Plus className="size-5" />
         </button>
       </div>
-      <p className="mt-2 text-center font-mono text-[9px] tracking-[0.16em] text-faint uppercase">
+      <Eyebrow as="p" size="sm" tone="action" className="mt-2 text-center text-faint">
         el control ajusta {field === "weight" ? "el peso" : "las repeticiones"}
-      </p>
+      </Eyebrow>
     </>
   )
 }

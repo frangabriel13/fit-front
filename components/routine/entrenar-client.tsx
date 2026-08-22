@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
-import { ProgressionRail, sheet, toSheetItems } from "@/components/routine/sheet-bits"
+import { Eyebrow } from "@/components/typography/eyebrow"
+import { ProgressionRail } from "@/components/routine/progression-rail"
+import { sheet, toSheetItems } from "@/lib/sheet"
 import { ActionBar } from "@/components/routine/entrenar/action-bar"
 import { CompareStrip } from "@/components/routine/entrenar/compare-strip"
 import { Disclosure } from "@/components/routine/entrenar/disclosure"
@@ -65,9 +67,13 @@ export function EntrenarClient() {
         >
           <ArrowLeft className="size-[18px]" />
         </Link>
-        <p className="justify-self-center font-mono text-[11px] font-semibold tracking-[0.22em] whitespace-nowrap text-muted-foreground uppercase">
+        <Eyebrow
+          as="p"
+          size="lg"
+          className="justify-self-center font-semibold whitespace-nowrap text-muted-foreground"
+        >
           Día {String(day.order).padStart(2, "0")} — {day.name}
-        </p>
+        </Eyebrow>
         <span className="justify-self-end font-mono text-[11px] tabular-nums text-faint">
           {slot.num}/{String(slots.length).padStart(2, "0")}
         </span>
@@ -150,9 +156,9 @@ export function EntrenarClient() {
             eyebrow="Progresión"
             delay="240ms"
             meta={
-              <span className="font-mono text-[10px] tracking-[0.06em] text-faint uppercase">
+              <Eyebrow tone="meta" className="text-faint">
                 top set
-              </span>
+              </Eyebrow>
             }
           >
             <ProgressionRail name={ex.name} />

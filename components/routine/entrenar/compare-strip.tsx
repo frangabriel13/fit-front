@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { MACROCYCLE } from "@/lib/routine-data"
 import type { HistSet } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
@@ -48,9 +49,9 @@ export function CompareStrip({
             onClick={() => onMatch(refSet.weight, refSet.reps)}
             className="flex cursor-pointer flex-col gap-1 rounded-xl border border-hairline bg-surface px-3 py-2.5 text-left transition-colors hover:border-edge"
           >
-            <span className="font-mono text-[9px] tracking-[0.18em] text-faint uppercase">
+            <Eyebrow size="sm" className="text-faint">
               Semana {MACROCYCLE.week - 1}
-            </span>
+            </Eyebrow>
             <span className="font-mono text-sm tabular-nums text-muted-foreground">
               {refSet.weight} kg × {refSet.reps}
             </span>
@@ -58,10 +59,14 @@ export function CompareStrip({
               <span className="font-mono text-[9px] tabular-nums text-faint">
                 1RM {refE1rm}
               </span>
-              <span className="inline-flex items-center gap-1 font-mono text-[9px] tracking-[0.1em] text-primary uppercase">
+              <Eyebrow
+                size="sm"
+                tone="meta"
+                className="inline-flex items-center gap-1 text-primary"
+              >
                 <ArrowRight className="size-2.5" strokeWidth={2.5} />
                 igualar
-              </span>
+              </Eyebrow>
             </span>
           </button>
 
@@ -70,10 +75,10 @@ export function CompareStrip({
       )}
 
       <div className="flex flex-col gap-1 py-2.5">
-        <span className="font-mono text-[9px] font-semibold tracking-[0.18em] text-primary uppercase">
+        <Eyebrow size="sm" className="font-semibold text-primary">
           Hoy · {unit} {round + 1}/{rounds}
           {memberLetter && ` — ${memberLetter}`}
-        </span>
+        </Eyebrow>
         <span className="font-mono text-sm tabular-nums text-foreground">
           {draft.weight || "—"} kg × {draft.reps || "—"}
         </span>

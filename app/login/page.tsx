@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Dumbbell } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { LoginForm } from "@/components/auth/login-form"
 import { cn } from "@/lib/utils"
 
@@ -61,9 +62,13 @@ export default function LoginPage() {
             className="fade-up w-0.5 shrink-0 rounded-full bg-gradient-to-b from-primary via-primary/15 via-62% to-transparent [--delay:140ms]"
           />
           <div>
-            <p className="fade-up mb-3 font-mono text-[11px] font-medium tracking-[0.3em] text-primary uppercase lg:mb-6 [--delay:100ms]">
+            <Eyebrow
+              as="p"
+              size="lg"
+              className="fade-up mb-3 font-medium tracking-[0.3em] text-primary lg:mb-6 [--delay:100ms]"
+            >
               Tu entrenamiento, en serio
-            </p>
+            </Eyebrow>
             <h1 className="font-display text-[52px] leading-[0.95] uppercase sm:text-7xl xl:text-8xl">
               <span className="fade-up block [--delay:180ms]">Entrená.</span>
               <span className="fade-up block text-transparent [-webkit-text-stroke:1.5px_rgba(245,247,246,0.4)] [--delay:280ms]">
@@ -88,9 +93,9 @@ export default function LoginPage() {
               className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent"
             />
 
-            <p className="font-mono text-[10px] font-semibold tracking-[0.25em] text-primary uppercase">
+            <Eyebrow as="p" className="font-semibold tracking-[0.25em] text-primary">
               Acceso privado
-            </p>
+            </Eyebrow>
             <h2 className="mt-2.5 font-display text-[28px] leading-none uppercase sm:text-3xl">
               Iniciar sesión
             </h2>
