@@ -1,6 +1,7 @@
 import { RotateCcw, X } from "lucide-react"
 
-import type { SheetItem } from "@/components/routine/sheet-bits"
+import { Eyebrow } from "@/components/typography/eyebrow"
+import type { SheetItem } from "@/lib/sheet"
 import type { SetEntry, SetStatus } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
 
@@ -72,9 +73,10 @@ export function SetMatrix({
               onClick={() => onGoTo(r)}
               className="flex min-h-11 cursor-pointer flex-col px-3 py-2.5 text-left"
             >
-              <span
+              <Eyebrow
+                size="sm"
                 className={cn(
-                  "font-mono text-[9px] font-semibold tracking-[0.16em] uppercase",
+                  "font-semibold",
                   current
                     ? "text-primary"
                     : st === "done"
@@ -83,7 +85,7 @@ export function SetMatrix({
                 )}
               >
                 {isSuper ? "Vuelta" : "Serie"} {r + 1}
-              </span>
+              </Eyebrow>
               <span className="mt-1 block space-y-0.5 font-mono text-[11px] tabular-nums">
                 {members.map((it, mi) => (
                   <span key={it.ex.name} className="block truncate">

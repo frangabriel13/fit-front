@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { cn } from "@/lib/utils"
 
 /**
@@ -33,14 +34,16 @@ export function ValueTile({
         active ? "border-primary bg-primary" : "border-hairline bg-surface"
       )}
     >
-      <p
+      <Eyebrow
+        as="p"
+        size="sm"
         className={cn(
-          "font-mono text-[9px] font-semibold tracking-[0.2em] uppercase transition-colors",
+          "font-semibold transition-colors",
           active ? "text-on-primary-soft" : "text-faint"
         )}
       >
         <span className="block truncate">{label}</span>
-      </p>
+      </Eyebrow>
       <input
         type="text"
         inputMode={inputMode}

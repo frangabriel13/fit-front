@@ -31,11 +31,6 @@ export function exerciseState(sets?: SetEntry[]): ExerciseState {
   return "in-progress"
 }
 
-export function topWeight(sets: { weight?: number }[]): number | null {
-  const ws = sets.map((s) => s.weight).filter((w): w is number => w != null)
-  return ws.length ? Math.max(...ws) : null
-}
-
 /**
  * 1RM estimado (fórmula de Epley): convierte "peso × reps" en una sola carga
  * comparable. Así una mejora en repeticiones al mismo peso también cuenta como

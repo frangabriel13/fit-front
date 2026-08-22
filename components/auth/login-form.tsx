@@ -13,6 +13,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { loginSchema, type LoginValues } from "@/lib/schemas"
 import { useLogin } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -98,13 +99,14 @@ export function LoginForm() {
                   Contraseña
                 </FormLabel>
                 {capsLock && (
-                  <span
+                  <Eyebrow
                     role="status"
-                    className="hidden items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-ember uppercase sm:flex"
+                    tone="meta"
+                    className="hidden items-center gap-1 text-ember sm:flex"
                   >
                     <ArrowBigUp className="size-3" />
                     Mayús activado
-                  </span>
+                  </Eyebrow>
                 )}
               </div>
               <FormControl>

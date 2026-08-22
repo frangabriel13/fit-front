@@ -1,4 +1,5 @@
-import { sheet, type SheetItem } from "@/components/routine/sheet-bits"
+import { Eyebrow } from "@/components/typography/eyebrow"
+import { sheet, type SheetItem } from "@/lib/sheet"
 import { cn } from "@/lib/utils"
 
 /**
@@ -22,10 +23,10 @@ export function ExerciseHeader({
 
   return (
     <div className="fade-up pb-3.5 [--delay:40ms]">
-      <p className="font-mono text-[10px] font-semibold tracking-[0.26em] text-primary uppercase">
+      <Eyebrow as="p" className="font-semibold tracking-[0.26em] text-primary">
         Ejercicio {slotNum}
         {isSuper && ` · ${members.length === 2 ? "biserie" : "superserie"}`}
-      </p>
+      </Eyebrow>
 
       {isSuper ? (
         <div className="mt-2 space-y-0.5">

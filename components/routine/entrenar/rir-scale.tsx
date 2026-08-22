@@ -1,5 +1,6 @@
 "use client"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { cn } from "@/lib/utils"
 
 /** El RIR en palabras: el número solo no dice cuánto te quedó en el tanque. */
@@ -16,12 +17,12 @@ export function RirScale({
   return (
     <div className="mt-4 border-t border-hairline pt-4">
       <div className="flex items-baseline justify-between">
-        <span className="font-mono text-[9px] font-semibold tracking-[0.2em] text-faint uppercase">
+        <Eyebrow size="sm" className="font-semibold text-faint">
           RIR
-        </span>
-        <span className="font-mono text-[9px] tracking-[0.06em] text-primary uppercase">
+        </Eyebrow>
+        <Eyebrow size="sm" tone="meta" className="text-primary">
           {value != null ? RIR_WORDS[value] : "sin marcar"}
-        </span>
+        </Eyebrow>
       </div>
       <div className="mt-2.5 grid grid-cols-5 gap-1.5">
         {[0, 1, 2, 3, 4].map((n) => {

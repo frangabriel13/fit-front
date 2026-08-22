@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import type { SheetItem } from "@/components/routine/sheet-bits"
+import type { SheetItem } from "@/lib/sheet"
 import type { Draft, Field } from "@/components/routine/entrenar/types"
 import { numStr, parseNum, round2, sanitizeDecimal, sanitizeInt } from "@/lib/num"
 import { HISTORY, SESSION } from "@/lib/routine-data"

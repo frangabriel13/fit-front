@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { Timer } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
+
 
 /** "4'" → 240, "90''" → 90. Descanso a segundos. */
 function restToSeconds(rest: string): number {
@@ -54,9 +56,9 @@ export function RestTimer({
           <Timer className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[9px] font-semibold tracking-[0.2em] text-primary uppercase">
+          <Eyebrow as="p" size="sm" className="font-semibold text-primary">
             Descanso
-          </p>
+          </Eyebrow>
           <p className="font-display text-[22px] leading-none tabular-nums text-foreground">
             {fmtClock(left)}
           </p>

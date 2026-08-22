@@ -1,4 +1,4 @@
-import type { SheetItem } from "@/components/routine/sheet-bits"
+import type { SheetItem } from "@/lib/sheet"
 import { SESSION } from "@/lib/routine-data"
 import { exerciseState, type ExerciseState } from "@/lib/training-math"
 

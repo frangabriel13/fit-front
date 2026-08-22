@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { AppHeader } from "@/components/layout/app-header"
 import { RoutineView } from "@/components/routine/routine-view"
 import { MACROCYCLE, ROUTINE } from "@/lib/routine-data"
@@ -66,9 +67,9 @@ export default function RutinaPage() {
           {/* Macrociclo — compacto, en línea con el título (desktop) */}
           <div className="hidden items-center gap-4 border-l border-white/10 pl-6 sm:flex">
             <div className="text-right">
-              <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground/80 uppercase">
+              <Eyebrow as="p" className="text-muted-foreground/80">
                 Macrociclo · {ROUTINE.days.length} días
-              </p>
+              </Eyebrow>
               <p className="mt-0.5 font-mono text-[13px] leading-none tracking-[0.1em] text-foreground uppercase">
                 Sem {String(MACROCYCLE.week).padStart(2, "0")}
                 <span className="text-muted-foreground/60">
@@ -83,9 +84,9 @@ export default function RutinaPage() {
           {/* Macrociclo — barra full-width (móvil) */}
           <div className="border-t border-white/10 pt-4 sm:hidden">
             <div className="mb-2.5 flex items-baseline justify-between gap-3">
-              <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground/80 uppercase">
+              <Eyebrow as="p" className="text-muted-foreground/80">
                 Macrociclo · {ROUTINE.days.length} días
-              </p>
+              </Eyebrow>
               <p className="font-mono text-[12px] leading-none tracking-[0.1em] text-foreground uppercase">
                 Sem {String(MACROCYCLE.week).padStart(2, "0")}
                 <span className="text-muted-foreground/60">
