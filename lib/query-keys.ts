@@ -4,6 +4,9 @@ export const queryKeys = {
   auth: {
     me: ["auth", "me"] as const,
   },
+  clients: {
+    all: ["clients"] as const,
+  },
   splits: {
     all: ["splits"] as const,
     detail: (id: string) => ["split", id] as const,

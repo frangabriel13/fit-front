@@ -1,9 +1,9 @@
 // ⚠️  CAPA DE MOCK — TEMPORAL. Borrar cuando exista el backend real.
 //
 // Activada por NEXT_PUBLIC_USE_MOCKS=true (ver .env.local).
-// Intercepta el `adapter` de axios y responde SOLO las rutas de auth
-// (/auth/login y /auth/me) con datos hardcodeados. Cualquier otra ruta
-// se delega al adapter real (le pega al backend si existe).
+// Intercepta el `adapter` de axios y responde las rutas de auth
+// (/auth/login, /auth/me) y /clients con datos hardcodeados. Cualquier otra
+// ruta devuelve una respuesta vacía (ver el final del adapter).
 //
 // No toca hooks ni componentes: el contrato es idéntico al backend real,
 // así que para volver a producción alcanza con NEXT_PUBLIC_USE_MOCKS=false
@@ -77,6 +77,18 @@ function unauthorized(config: InternalAxiosRequestConfig): Promise<never> {
   )
 }
 
+/**
+ * 403, NO 401. El interceptor de lib/api trata cualquier 401 como sesión
+ * vencida: borra el token y manda a /login. "Estás logueado pero no te
+ * corresponde" tiene que ser 403 para no cerrarle la sesión al usuario.
+ */
+function forbidden(config: InternalAxiosRequestConfig): Promise<never> {
+  const response = makeResponse(config, { message: "Forbidden" }, 403)
+  return Promise.reject(
+    new AxiosError("Forbidden", "ERR_BAD_REQUEST", config, null, response)
+  )
+}
+
 function readAuthHeader(config: InternalAxiosRequestConfig): string {
   const headers = config.headers
   const value =
@@ -119,6 +131,18 @@ export function installAuthMock(instance: AxiosInstance): void {
       if (!user) return unauthorized(config)
       await delay(SIMULATED_LATENCY_MS)
       return makeResponse(config, publicUser(user))
+    }
+
+    // GET /clients — la cartera del entrenador. Solo un trainer la ve.
+    if (url.endsWith("/clients") && method === "get") {
+      const token = readAuthHeader(config).replace(/^Bearer\s+/i, "")
+      if (!token.startsWith(TOKEN_PREFIX)) return unauthorized(config)
+      const me = MOCK_USERS.find((u) => u.id === token.slice(TOKEN_PREFIX.length))
+      if (!me) return unauthorized(config)
+      if (me.role !== "trainer") return forbidden(config)
+      await delay(SIMULATED_LATENCY_MS)
+      const clients = MOCK_USERS.filter((u) => u.role === "client").map(publicUser)
+      return makeResponse(config, clients)
     }
 
     // Resto de rutas: con el mock activo aislamos TODO el frontend del backend.
