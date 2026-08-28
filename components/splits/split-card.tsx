@@ -31,10 +31,10 @@ export function SplitCard({ split }: { split: Split }) {
   function onConfirmDelete() {
     deleteSplit.mutate(split.id, {
       onSuccess: () => {
-        toast.success("Split borrado")
+        toast.success("Rutina borrada")
         setDeleteOpen(false)
       },
-      onError: () => toast.error("No se pudo borrar el split."),
+      onError: () => toast.error("No se pudo borrar la rutina."),
     })
   }
 
@@ -99,7 +99,7 @@ export function SplitCard({ split }: { split: Split }) {
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="¿Borrar split?"
+        title="¿Borrar rutina?"
         description={`Se va a borrar "${split.name}" y todo su contenido. Esta acción no se puede deshacer.`}
         onConfirm={onConfirmDelete}
         isPending={deleteSplit.isPending}

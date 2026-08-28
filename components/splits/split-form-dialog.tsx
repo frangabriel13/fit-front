@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react"
 import type { z } from "zod"
 
 import { splitSchema, type SplitValues } from "@/lib/schemas"
+import { useMe } from "@/hooks/use-auth"
+import { useClients } from "@/hooks/use-clients"
 import { useCreateSplit, useUpdateSplit } from "@/hooks/use-splits"
 import type { Split } from "@/types/api"
 import { Button } from "@/components/ui/button"
@@ -24,11 +26,19 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface SplitFormDialogProps {
   open: boolean
@@ -46,24 +56,31 @@ export function SplitFormDialog({
   const update = useUpdateSplit()
   const isPending = create.isPending || update.isPending
 
+  const { data: me } = useMe()
+  const isTrainer = me?.role === "trainer"
+  const { data: clients } = useClients(isTrainer)
+
   const form = useForm<z.input<typeof splitSchema>, unknown, SplitValues>({
     resolver: zodResolver(splitSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: { name: "", description: "", clientId: "" },
   })
 
   useEffect(() => {
     if (open) {
+      // `clientId` arranca siempre vacío, también al editar: la API no informa
+      // a quién está asignada la rutina, así que preseleccionar sería inventar.
       form.reset({
         name: split?.name ?? "",
         description: split?.description ?? "",
+        clientId: "",
       })
     }
   }, [open, split, form])
 
   function onSubmit(values: SplitValues) {
-    const onError = () => toast.error("No se pudo guardar el split.")
+    const onError = () => toast.error("No se pudo guardar la rutina.")
     const onSuccess = () => {
-      toast.success(isEdit ? "Split actualizado" : "Split creado")
+      toast.success(isEdit ? "Rutina actualizada" : "Rutina creada")
       onOpenChange(false)
     }
 
@@ -78,7 +95,7 @@ export function SplitFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar split" : "Nuevo split"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar rutina" : "Nueva rutina"}</DialogTitle>
           <DialogDescription>
             Una rutina con sus microciclos, días y ejercicios.
           </DialogDescription>
@@ -115,6 +132,41 @@ export function SplitFormDialog({
                 </FormItem>
               )}
             />
+            {isTrainer && clients && clients.length > 0 && (
+              <FormField
+                control={form.control}
+                name="clientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Asignar a</FormLabel>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Elegí un cliente" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {clients.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {isEdit
+                        ? "Asignar suma un cliente; no quita los que ya tenga."
+                        : "Sin esto la rutina queda sin asignar y nadie la ve."}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <DialogFooter>
               <Button type="submit" disabled={isPending}>
                 {isPending && <Loader2 className="animate-spin" />}
