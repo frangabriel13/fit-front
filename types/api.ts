@@ -88,6 +88,11 @@ export interface LoginPayload {
 export interface SplitPayload {
   name: string
   description?: string
+  /**
+   * A quién se le asigna. La API la crea (o reactiva) como asignación: mandarlo
+   * ASIGNA, nunca desasigna, y omitirlo no toca las asignaciones que ya hay.
+   */
+  clientId?: string
 }
 
 export interface MicrocyclePayload {

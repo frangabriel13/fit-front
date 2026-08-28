@@ -21,6 +21,8 @@ export type LoginValues = z.infer<typeof loginSchema>
 export const splitSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(100),
   description: optionalText,
+  // Vacío = no tocar las asignaciones. El <select> usa "" como "sin elegir".
+  clientId: optionalText,
 })
 export type SplitValues = z.infer<typeof splitSchema>
 

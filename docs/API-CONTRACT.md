@@ -302,9 +302,21 @@ definir quién queda como autor de la sesión.
 `GET /splits`. Si un usuario puede tener más de una activa a la vez, hace falta
 un selector — y probablemente una marca de "activa" en el modelo.
 
-**Asignar una rutina a un cliente.** El backend lo soporta (`POST /splits` y
-`PATCH /splits/:id` aceptan `clientId`), pero el editor del frontend todavía no
-manda ese campo: una rutina creada desde `/splits` nace sin asignar.
+**`SplitDto` no dice a quién está asignada la rutina.** El editor ya puede
+asignar (`POST /splits` y `PATCH /splits/:id` con `clientId`), pero no puede
+**mostrar** el resultado: la respuesta trae `id`, `name`, `description` y
+`microcycles`, y nada de las asignaciones. Consecuencias hoy:
+
+- `/splits` no puede decir "Rutina de Diamela"; todas se ven iguales.
+- Al editar, el selector de cliente arranca vacío a propósito — preseleccionar
+  sería inventar un dato que la API no dio.
+
+Alcanzaría con agregar el cliente asignado (id y nombre) a `SplitDto`.
+
+**No hay forma de desasignar.** Mandar `clientId` hace un upsert que asigna o
+reactiva; no existe el camino inverso. Verificado: renombrar una rutina sin
+mandar `clientId` no toca las asignaciones, que es lo que hace seguro el
+diálogo de edición.
 
 ---
 

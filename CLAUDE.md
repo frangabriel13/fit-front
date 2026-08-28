@@ -32,7 +32,7 @@ A mobile-first fitness app (Spanish UI) that consumes an external NestJS REST AP
 
 Every screen now reads from the API; there is no mock data module. What differs is the audience:
 
-1. **Editor** (`app/splits/*`, `components/editor`, `components/splits`). CRUD over the nested model — build and edit a routine. Plain UI.
+1. **Editor** (`app/splits/*`, `components/editor`, `components/splits`). CRUD over the nested model — build a routine and assign it to a client. Trainer-only (the API 403s a client on write). Still on the old plain UI, unlike the rest of the app. Reached from the header link, not from the home dashboard.
 2. **Trainee flow** (`app/rutina`, `app/rutina/entrenar`, `app/progreso`, `components/routine`, `components/progress`). Reads the same resources through `hooks/use-plan.ts` and renders them in the "planilla" idiom. This is the designed surface; the home dashboard links here.
 3. **Trainer's view of a client** (`app/clientes/[id]`). Reuses the trainee components with `usePlan(clientId)` and `readOnly` — same screens, someone else's data, no way to train from there. Scoping is the backend's job; the frontend only says whose data it wants.
 

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Plus, Dumbbell } from "lucide-react"
 
+import { useMe } from "@/hooks/use-auth"
 import { useSplits } from "@/hooks/use-splits"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader } from "@/components/ui/card"
@@ -10,18 +11,29 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { SplitCard } from "@/components/splits/split-card"
 import { SplitFormDialog } from "@/components/splits/split-form-dialog"
 
+/**
+ * El editor de rutinas del entrenador.
+ *
+ * Crear es solo para `trainer` (la API responde 403 a un cliente), así que el
+ * botón no se muestra: ofrecer una acción que ya sabemos que va a fallar es
+ * peor que no ofrecerla.
+ */
 export function SplitsGrid() {
   const { data: splits, isLoading, isError, refetch } = useSplits()
+  const { data: me } = useMe()
+  const isTrainer = me?.role === "trainer"
   const [createOpen, setCreateOpen] = useState(false)
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Mis rutinas</h1>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          Nuevo split
-        </Button>
+        {isTrainer && (
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            Nueva rutina
+          </Button>
+        )}
       </div>
 
       {isLoading && (
@@ -53,12 +65,16 @@ export function SplitsGrid() {
           <Dumbbell className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-3 font-medium">Todavía no tenés rutinas</p>
           <p className="text-sm text-muted-foreground">
-            Creá tu primer split para empezar.
+            {isTrainer
+              ? "Creá tu primera rutina para empezar."
+              : "Tu entrenador todavía no te asignó ninguna."}
           </p>
-          <Button className="mt-4" onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            Nuevo split
-          </Button>
+          {isTrainer && (
+            <Button className="mt-4" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              Nueva rutina
+            </Button>
+          )}
         </div>
       )}
 
