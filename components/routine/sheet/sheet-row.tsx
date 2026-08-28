@@ -1,5 +1,6 @@
 "use client"
 
+import { trainHref } from "@/lib/routes"
 import type { SheetItem } from "@/lib/sheet"
 import { exerciseState, type SetEntry } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
@@ -19,6 +20,7 @@ export function SheetRow({
   totalWeeks,
   expanded,
   onToggle,
+  readOnly = false,
 }: {
   dayId: string
   item: SheetItem
@@ -28,6 +30,7 @@ export function SheetRow({
   totalWeeks: number
   expanded: boolean
   onToggle: () => void
+  readOnly?: boolean
 }) {
   const { ex, num, letter, chains } = item
   const state = exerciseState(entries)
@@ -91,12 +94,16 @@ export function SheetRow({
           {chains ? "→" : ex.rest}
         </span>
 
-        <RowActions
-          name={ex.name}
-          href={`/rutina/entrenar?dia=${dayId}&ej=${ex.id}`}
-          state={state}
-          className="shrink-0"
-        />
+        {readOnly ? (
+          <span className="hidden md:block" />
+        ) : (
+          <RowActions
+            name={ex.name}
+            href={trainHref(dayId, ex.id)}
+            state={state}
+            className="shrink-0"
+          />
+        )}
       </div>
 
       {expanded && (
@@ -107,6 +114,7 @@ export function SheetRow({
           history={history}
           week={week}
           totalWeeks={totalWeeks}
+          readOnly={readOnly}
         />
       )}
     </li>

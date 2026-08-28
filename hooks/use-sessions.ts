@@ -12,11 +12,16 @@ import type {
   WorkoutSession,
 } from "@/types/api"
 
-export function useSessions(dayId: string) {
+/** Con `userId`, las sesiones de ese cliente; sin él, las propias. */
+export function useSessions(dayId: string, userId?: string) {
   return useQuery({
-    queryKey: queryKeys.sessions.byDay(dayId),
+    queryKey: queryKeys.sessions.byDay(dayId, userId),
     queryFn: () =>
-      unwrap<WorkoutSession[]>(api.get(`/days/${dayId}/sessions`)),
+      unwrap<WorkoutSession[]>(
+        api.get(`/days/${dayId}/sessions`, {
+          params: userId ? { userId } : undefined,
+        })
+      ),
     enabled: !!dayId,
   })
 }

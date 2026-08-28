@@ -8,7 +8,7 @@ import { TrainingScreen } from "@/components/routine/entrenar/training-screen"
 import { slotState, toSlots, type EntriesLookup } from "@/components/routine/entrenar/slots"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useActiveSession } from "@/hooks/use-active-session"
-import { useMyPlan } from "@/hooks/use-my-plan"
+import { usePlan } from "@/hooks/use-plan"
 import { toSheetItems } from "@/lib/sheet"
 import { entriesFor } from "@/lib/set-logs"
 
@@ -28,7 +28,7 @@ export function EntrenarClient({
   exerciseId: string | null
 }) {
   const { days, history, week, totalWeeks, isPending, isError, isEmpty } =
-    useMyPlan()
+    usePlan()
 
   const day = days.find((d) => d.id === dayId) ?? days[0]
   const { sessionId, session, isLoading } = useActiveSession(day?.id ?? "")

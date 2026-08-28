@@ -12,11 +12,13 @@ export function SessionCard({
   hasSession,
   startedAt,
   doneCount,
+  readOnly = false,
 }: {
   day: PlanDay
   hasSession: boolean
   startedAt: string | null
   doneCount: number
+  readOnly?: boolean
 }) {
   return (
     <div className="fade-up mt-5 hidden flex-wrap items-center justify-between gap-x-6 gap-y-4 rounded-2xl border border-white/10 bg-card/40 px-5 py-4 md:flex">
@@ -57,15 +59,17 @@ export function SessionCard({
           </>
         )}
       </div>
-      <Button
-        asChild
-        className="h-10 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
-      >
-        <Link href={trainHref(day.id)}>
-          <Play className="size-3.5 fill-current" />
-          {hasSession ? "Reanudar" : "Comenzar"}
-        </Link>
-      </Button>
+      {!readOnly && (
+        <Button
+          asChild
+          className="h-10 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50 transition-shadow hover:shadow-primary/70"
+        >
+          <Link href={trainHref(day.id)}>
+            <Play className="size-3.5 fill-current" />
+            {hasSession ? "Reanudar" : "Comenzar"}
+          </Link>
+        </Button>
+      )}
     </div>
   )
 }

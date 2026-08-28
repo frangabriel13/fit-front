@@ -4,7 +4,7 @@ import { Notice } from "@/components/feedback/notice"
 import { RoutineHeader } from "@/components/routine/routine-header"
 import { RoutineView } from "@/components/routine/routine-view"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useMyPlan } from "@/hooks/use-my-plan"
+import { usePlan } from "@/hooks/use-plan"
 
 function Loading() {
   return (
@@ -20,7 +20,7 @@ function Loading() {
 /** La pantalla de "Mi rutina": trae el plan y lo entrega ya resuelto a la vista. */
 export function RoutineScreen() {
   const { split, days, week, totalWeeks, history, isPending, isError, isEmpty } =
-    useMyPlan()
+    usePlan()
 
   if (isPending) return <Loading />
   if (isError) return <Notice>No se pudo cargar tu rutina.</Notice>

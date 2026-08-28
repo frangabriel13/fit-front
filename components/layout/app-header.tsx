@@ -6,9 +6,15 @@ import { LogOut, Dumbbell } from "lucide-react"
 import { useLogout, useMe } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 
+/**
+ * Chrome de la app. El acceso al editor de rutinas vive acá y no en el home
+ * porque el home son dos puertas grandes por rol, y meter una tercera tarjeta
+ * cambiaría esa decisión de diseño. El editor es una herramienta, no una puerta.
+ */
 export function AppHeader() {
   const { data: user } = useMe()
   const logout = useLogout()
+  const isTrainer = user?.role === "trainer"
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -22,6 +28,14 @@ export function AppHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
+          {isTrainer && (
+            <Link
+              href="/splits"
+              className="rounded-lg px-2.5 py-1.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              Editar rutinas
+            </Link>
+          )}
           {user?.name && (
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {user.name}

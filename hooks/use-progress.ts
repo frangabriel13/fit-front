@@ -11,11 +11,15 @@ import type { ExerciseHistory, SplitProgress } from "@/types/api"
  * en una sola llamada. Van juntos porque el gráfico necesita las dos cosas — la
  * semana en curso es lo que distingue "hoy" de las semanas ya cerradas.
  */
-export function useProgress(splitId: string) {
+export function useProgress(splitId: string, userId?: string) {
   return useQuery({
-    queryKey: queryKeys.progress.forSplit(splitId),
+    queryKey: queryKeys.progress.forSplit(splitId, userId),
     queryFn: () =>
-      unwrap<SplitProgress>(api.get(`/splits/${splitId}/progress`)),
+      unwrap<SplitProgress>(
+        api.get(`/splits/${splitId}/progress`, {
+          params: userId ? { userId } : undefined,
+        })
+      ),
     enabled: !!splitId,
   })
 }

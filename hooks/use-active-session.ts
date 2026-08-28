@@ -12,16 +12,20 @@ import type { WorkoutSession } from "@/types/api"
  *
  * Es la versión de solo lectura: la usa el overview de la rutina, que muestra
  * cómo viene el día pero no debería abrir una sesión por el solo hecho de que
- * alguien mire la planilla.
+ * alguien mire la planilla. Con `userId` mira la sesión de un cliente — que es
+ * justamente el caso en el que NO hay que crear nada.
  */
-export function useTodaysSession(dayId: string): {
+export function useTodaysSession(
+  dayId: string,
+  userId?: string
+): {
   sessionId: string | null
   session: WorkoutSession | undefined
   isLoading: boolean
   /** La lista del día ya se resolvió bien: recién ahí se sabe si falta crearla. */
   listReady: boolean
 } {
-  const sessionsQuery = useSessions(dayId)
+  const sessionsQuery = useSessions(dayId, userId)
 
   // La más reciente de hoy: si se abrieron varias, manda la última.
   const sessionId = useMemo(() => {
@@ -48,6 +52,9 @@ export function useTodaysSession(dayId: string): {
 
 /**
  * Sesión de hoy para un día: la reanuda si ya existe, o crea una.
+ *
+ * Siempre del usuario logueado, a propósito: no existe "empezar a entrenar en
+ * nombre de otro". Un entrenador mirando a un cliente usa `useTodaysSession`.
  *
  * El `ensuredRef` es lo que evita crear dos sesiones: el efecto puede correr
  * más de una vez (StrictMode, refetch de la lista) y la creación es un POST.

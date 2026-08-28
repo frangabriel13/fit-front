@@ -262,7 +262,21 @@ datos reales:
 ## 4. Lo que queda abierto
 
 Ya no hay pantallas mockeadas: `/rutina`, `/rutina/entrenar` y `/progreso` leen
-de la API igual que `/splits/*`, y `lib/routine-data.ts` está borrado.
+de la API igual que `/splits/*`, y `lib/routine-data.ts` está borrado. El
+entrenador ve la rutina y el progreso de cada cliente en `/clientes/[id]`,
+usando los filtros por usuario.
+
+**Los filtros por usuario no se llaman igual en todos lados.** Es la misma
+persona en los tres casos:
+
+| endpoint | parámetro |
+|---|---|
+| `GET /splits` | `clientId` |
+| `GET /splits/:id/progress` | `userId` |
+| `GET /days/:dayId/sessions` | `userId` |
+
+`hooks/use-plan.ts` lo absorbe con un solo argumento, pero unificar el nombre
+del lado del backend ahorraría la próxima confusión.
 
 Lo que sigue sin resolver:
 
@@ -270,25 +284,27 @@ Lo que sigue sin resolver:
 token del entrenador:
 
 ```
-GET /days/<día de la clienta>/sessions   → []          (filtrado por usuario)
-GET /sessions/<sesión de esa clienta>    → 200 + body  (sin filtrar)
+GET /days/<día>/sessions            → []          (filtrado por usuario)
+GET /sessions/<sesión de un cliente> → 200 + body  (sin filtrar)
 ```
 
-El detalle no aplica el mismo criterio que el listado. Como el frontend arma
-"la sesión de hoy" desde el listado, un entrenador que abra el día de un cliente
-no ve la sesión del cliente: `useActiveSession` no la encuentra y **crea una
-sesión nueva a nombre del entrenador**. Hay que decidir cuál de las dos
-respuestas es la correcta y alinear la otra.
+El detalle no aplica el criterio del listado. Hoy no rompe nada visible —la
+vista del entrenador es de solo lectura y nunca crea sesiones—, pero es una
+fuga: con el id de una sesión se lee entera sin pasar por el filtro. Hay que
+decidir cuál de las dos respuestas es la correcta y alinear la otra.
 
-**Ver la rutina de un cliente.** El backend ya acepta `?userId=` en
-`GET /days/:dayId/sessions` y en `GET /splits/:id/progress`. El frontend
-todavía no lo manda: `/clientes` linkea a `/rutina`, que muestra la rutina de
-quien está logueado. Cuando se resuelva el punto anterior, es cablear ese
-parámetro.
+**Escribir en nombre de un cliente.** No existe y probablemente esté bien así:
+`useActiveSession` solo abre sesiones del usuario logueado, a propósito. Si
+alguna vez un entrenador tiene que cargar series por su cliente, hace falta
+definir quién queda como autor de la sesión.
 
-**Varias rutinas asignadas.** `hooks/use-my-plan.ts` toma la **primera** de
+**Varias rutinas asignadas.** `hooks/use-plan.ts` toma la **primera** de
 `GET /splits`. Si un usuario puede tener más de una activa a la vez, hace falta
 un selector — y probablemente una marca de "activa" en el modelo.
+
+**Asignar una rutina a un cliente.** El backend lo soporta (`POST /splits` y
+`PATCH /splits/:id` aceptan `clientId`), pero el editor del frontend todavía no
+manda ese campo: una rutina creada desde `/splits` nace sin asignar.
 
 ---
 
