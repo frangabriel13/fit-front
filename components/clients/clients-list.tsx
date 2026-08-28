@@ -3,18 +3,11 @@
 import Link from "next/link"
 import { ArrowRight, UserRound } from "lucide-react"
 
+import { Notice } from "@/components/feedback/notice"
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMe } from "@/hooks/use-auth"
 import { useClients } from "@/hooks/use-clients"
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-edge p-8 text-center text-sm text-muted-foreground">
-      {children}
-    </div>
-  )
-}
 
 function Loading() {
   return (

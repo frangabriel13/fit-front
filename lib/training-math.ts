@@ -2,9 +2,9 @@
  * Matemática de entrenamiento: fórmulas y estados que NO dependen de dónde
  * vengan los datos.
  *
- * Viven acá y no en `lib/routine-data.ts` a propósito: ese archivo es mock y el
- * plan es borrarlo cuando exista el backend (ver CLAUDE.md). Si la lógica de
- * dominio se queda ahí, ese borrado se la lleva puesta.
+ * Están separadas de la capa de API a propósito: `lib/plan.ts` y
+ * `lib/set-logs.ts` traducen lo que devuelve el backend, y acá vive lo que
+ * significa. Eso mantiene las fórmulas probables sin levantar nada.
  */
 
 export type SetStatus = "done" | "skipped" | "pending"
@@ -19,8 +19,8 @@ export interface SetEntry {
 export interface HistSet {
   weight: number
   reps: number
-  /** RIR / esfuerzo real registrado en esa serie. */
-  rir: number
+  /** RIR / esfuerzo real registrado. Puede faltar: una serie puede ir sin RIR. */
+  rir: number | null
 }
 
 export type ExerciseState = "pending" | "in-progress" | "done"

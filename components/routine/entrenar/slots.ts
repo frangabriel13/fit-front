@@ -1,6 +1,5 @@
 import type { SheetItem } from "@/lib/sheet"
-import { SESSION } from "@/lib/routine-data"
-import { exerciseState, type ExerciseState } from "@/lib/training-math"
+import { exerciseState, type ExerciseState, type SetEntry } from "@/lib/training-math"
 
 /**
  * Un "slot" es una posición de la planilla: un ejercicio suelto, o los dos o
@@ -12,6 +11,9 @@ export interface Slot {
   items: SheetItem[]
 }
 
+/** De dónde salen las series registradas de un ejercicio. */
+export type EntriesLookup = (exerciseId: string) => SetEntry[] | undefined
+
 export function toSlots(items: SheetItem[]): Slot[] {
   const slots: Slot[] = []
   for (const it of items) {
@@ -22,8 +24,13 @@ export function toSlots(items: SheetItem[]): Slot[] {
   return slots
 }
 
-export function slotState(slot: Slot): ExerciseState {
-  const states = slot.items.map((it) => exerciseState(SESSION.logs[it.ex.name]))
+/**
+ * El estado del slot es el de sus miembros juntos: una biserie no está hecha
+ * hasta que lo están A y B. El registro entra por parámetro porque de dónde
+ * salen las series es asunto de quien llama, no de la planilla.
+ */
+export function slotState(slot: Slot, entriesOf: EntriesLookup): ExerciseState {
+  const states = slot.items.map((it) => exerciseState(entriesOf(it.ex.id)))
   if (states.every((s) => s === "done")) return "done"
   if (states.some((s) => s !== "pending")) return "in-progress"
   return "pending"

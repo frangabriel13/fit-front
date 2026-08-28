@@ -15,10 +15,11 @@ import { slotTitle, type Slot } from "./slots"
 export function ActionBar({
   resting,
   allClosed,
-  rest,
+  restSeconds,
   unit,
   canComplete,
   next,
+  nextHref,
   onComplete,
   onSkip,
   onReset,
@@ -26,10 +27,11 @@ export function ActionBar({
 }: {
   resting: boolean
   allClosed: boolean
-  rest: string
+  restSeconds: number
   unit: string
   canComplete: boolean
   next?: Slot
+  nextHref: string
   onComplete: () => void
   onSkip: () => void
   onReset: () => void
@@ -38,14 +40,14 @@ export function ActionBar({
   return (
     <div className="sticky bottom-0 z-20 -mx-5 mt-auto border-t border-edge bg-background px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       {resting ? (
-        <RestTimer rest={rest} onSkip={onRestEnd} onDone={onRestEnd} />
+        <RestTimer seconds={restSeconds} onSkip={onRestEnd} onDone={onRestEnd} />
       ) : allClosed ? (
         <div className="flex items-center gap-3">
           <Button
             asChild
             className="h-14 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
           >
-            <Link href="/rutina/entrenar">
+            <Link href={nextHref}>
               <span className="truncate">
                 {next ? `Siguiente · ${next.num} ${slotTitle(next)}` : "Terminar el día"}
               </span>

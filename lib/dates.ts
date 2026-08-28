@@ -8,3 +8,11 @@ export function isToday(iso: string): boolean {
     d.getDate() === now.getDate()
   )
 }
+
+/** Hora local de una fecha ISO, en formato "18:40". */
+export function hhmm(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes()
+  ).padStart(2, "0")}`
+}

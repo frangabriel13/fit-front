@@ -15,4 +15,7 @@ export const queryKeys = {
     byDay: (dayId: string) => ["sessions", "day", dayId] as const,
     detail: (id: string) => ["session", id] as const,
   },
+  progress: {
+    forSplit: (splitId: string) => ["progress", splitId] as const,
+  },
 }

@@ -1,7 +1,6 @@
 import { ArrowRight } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
-import { MACROCYCLE } from "@/lib/routine-data"
 import type { HistSet } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
 import type { Draft } from "./types"
@@ -13,6 +12,7 @@ import type { Draft } from "./types"
  */
 export function CompareStrip({
   refSet,
+  refWeek,
   refE1rm,
   liveE1rm,
   e1rmDelta,
@@ -24,6 +24,8 @@ export function CompareStrip({
   onMatch,
 }: {
   refSet: HistSet | null
+  /** Número de la semana que se usa como referencia. */
+  refWeek: number
   refE1rm: number | null
   liveE1rm: number | null
   e1rmDelta: number | null
@@ -50,7 +52,7 @@ export function CompareStrip({
             className="flex cursor-pointer flex-col gap-1 rounded-xl border border-hairline bg-surface px-3 py-2.5 text-left transition-colors hover:border-edge"
           >
             <Eyebrow size="sm" className="text-faint">
-              Semana {MACROCYCLE.week - 1}
+              Semana {refWeek}
             </Eyebrow>
             <span className="font-mono text-sm tabular-nums text-muted-foreground">
               {refSet.weight} kg × {refSet.reps}

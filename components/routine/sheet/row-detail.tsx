@@ -3,19 +3,32 @@
 import { useState } from "react"
 
 import { ProgressionRail } from "@/components/routine/progression-rail"
-import { HISTORY, SESSION, type RoutineExercise } from "@/lib/routine-data"
+import type { PlanExercise } from "@/lib/plan"
+import { trainHref } from "@/lib/routes"
+import type { SetEntry } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
+import type { ExerciseHistory } from "@/types/api"
 import { DetailActions } from "./detail-actions"
 import { setDelta } from "./set-delta"
 import { SetLogList, type SetLine } from "./set-log-list"
 
 /** Detalle expandido de una fila: series de hoy, comparación y acciones. */
-export function RowDetail({ ex }: { ex: RoutineExercise }) {
-  const logs =
-    SESSION.logs[ex.name] ??
-    Array.from({ length: ex.sets }, () => ({ status: "pending" as const }))
-  const hist = HISTORY[ex.name]
-  const prevWeek = hist?.weeks.at(-1) ?? null
+export function RowDetail({
+  ex,
+  dayId,
+  entries,
+  history,
+  week,
+  totalWeeks,
+}: {
+  ex: PlanExercise
+  dayId: string
+  entries: SetEntry[]
+  history: ExerciseHistory | undefined
+  week: number
+  totalWeeks: number
+}) {
+  const prevWeek = history?.weeks.at(-1) ?? null
   const hasPrev = prevWeek != null
 
   // Toggle de la planilla: "Hoy" (con delta vs. la semana pasada) o la
@@ -33,7 +46,7 @@ export function RowDetail({ ex }: { ex: RoutineExercise }) {
           reps: p.reps,
           rir: p.rir,
         }))
-      : logs.map((s, i) => ({
+      : entries.map((s, i) => ({
           n: i + 1,
           status: s.status,
           weight: s.weight,
@@ -79,14 +92,19 @@ export function RowDetail({ ex }: { ex: RoutineExercise }) {
           <SetLogList key={showPrev ? "prev" : "today"} lines={lines} />
         </section>
 
-        {hist && (
+        {history && (
           <section className="rounded-2xl bg-secondary p-4">
-            <ProgressionRail name={ex.name} />
+            <ProgressionRail
+              history={history}
+              week={week}
+              totalWeeks={totalWeeks}
+              today={entries}
+            />
           </section>
         )}
       </div>
 
-      <DetailActions />
+      <DetailActions href={trainHref(dayId, ex.id)} />
     </div>
   )
 }

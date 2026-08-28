@@ -1,21 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 
 import type { SheetItem } from "@/lib/sheet"
 import type { Draft, Field } from "@/components/routine/entrenar/types"
 import { numStr, parseNum, round2, sanitizeDecimal, sanitizeInt } from "@/lib/num"
-import { HISTORY, SESSION } from "@/lib/routine-data"
+import { useDeleteSetLog, useSaveSetLogs } from "@/hooks/use-sessions"
+import { entriesFor, findSetLogId } from "@/lib/set-logs"
 import { e1rm, topE1RM, type SetEntry, type SetStatus } from "@/lib/training-math"
+import type { ExerciseHistory, SetLogUpsert, WorkoutSession } from "@/types/api"
 
 /**
  * Estado del modo entrenamiento para UN slot de la planilla (un ejercicio, o
  * los miembros A/B de una superserie).
  *
- * Hoy vive en memoria y se siembra de los mocks SESSION/HISTORY: al recargar se
- * pierde. Cuando exista el backend, este hook es la única pieza que cambia —
- * pasa a envolver a `use-sessions` como hace /splits. Los componentes de
- * `components/routine/entrenar/` no se enteran.
+ * El registro es local Y remoto a la vez, a propósito: la pantalla responde al
+ * toque sin esperar la red (el borrador, el cursor y el descanso son estado de
+ * UI) y cada serie cerrada se manda al toque — completar una serie es un gesto
+ * deliberado, no algo que convenga agrupar con debounce como la grilla de
+ * `/splits`. Si el guardado falla se avisa; lo cargado no se pierde de la
+ * pantalla.
  */
 
 /** Cursor sobre (ronda, miembro): la unidad que se está cargando ahora. */
@@ -49,6 +54,14 @@ function advance(c: Cursor, rounds: number, memberCount: number): Cursor {
   return r >= rounds ? c : { round: r, member: m }
 }
 
+/** La última semana cerrada de un ejercicio: la referencia contra la que se compara. */
+function lastWeekOf(
+  history: Record<string, ExerciseHistory>,
+  name: string
+) {
+  return history[name]?.weeks.at(-1) ?? null
+}
+
 /**
  * Valores de arranque del borrador: si la unidad ya está hecha, sus propios
  * valores; si está pendiente, la última serie hecha del miembro (overload); si
@@ -58,45 +71,83 @@ function prefill(
   logs: SetEntry[][],
   members: SheetItem[],
   member: number,
-  round: number
+  round: number,
+  history: Record<string, ExerciseHistory>
 ): Draft {
-  const entry = logs[member][round]
-  if (entry.status === "done")
+  const entry = logs[member]?.[round]
+  if (entry?.status === "done")
     return {
       weight: numStr(entry.weight),
       reps: numStr(entry.reps),
       rir: numStr(entry.rir),
     }
   for (let r = round - 1; r >= 0; r--) {
-    const e = logs[member][r]
-    if (e.status === "done")
+    const e = logs[member]?.[r]
+    if (e?.status === "done")
       return { weight: numStr(e.weight), reps: numStr(e.reps), rir: numStr(e.rir) }
   }
-  const lastWeek = HISTORY[members[member].ex.name]?.weeks.at(-1)
+  const lastWeek = lastWeekOf(history, members[member].ex.name)
   const ref = lastWeek?.[round] ?? lastWeek?.[0]
   return { weight: numStr(ref?.weight), reps: "", rir: "" }
 }
 
-/** Registro inicial: lo que ya venía de la sesión de hoy, o todo pendiente. */
-function seed(members: SheetItem[]): SetEntry[][] {
+/** Todo pendiente: lo que se muestra hasta que llega la sesión. */
+function blank(members: SheetItem[]): SetEntry[][] {
   return members.map((it) =>
-    Array.from({ length: it.ex.sets }, (_, i) => ({
-      ...(SESSION.logs[it.ex.name]?.[i] ?? { status: "pending" as const }),
-    }))
+    Array.from({ length: it.ex.sets }, () => ({ status: "pending" as const }))
   )
 }
 
-export function useTrainingSession(members: SheetItem[]) {
+/** El registro tal como quedó guardado en la sesión de hoy. */
+function seedFrom(session: WorkoutSession, members: SheetItem[]): SetEntry[][] {
+  return members.map((it) =>
+    entriesFor(session.setLogs, it.ex.id, it.ex.sets)
+  )
+}
+
+/** Una serie de la planilla en la forma que espera el upsert de la API. */
+function toUpsert(
+  exerciseId: string,
+  setNumber: number,
+  entry: SetEntry
+): SetLogUpsert {
+  if (entry.status === "skipped")
+    return { dayExerciseId: exerciseId, setNumber, completed: false, skipped: true }
+  return {
+    dayExerciseId: exerciseId,
+    setNumber,
+    completed: true,
+    skipped: false,
+    weight: entry.weight,
+    actualReps: entry.reps,
+    actualRir: entry.rir,
+  }
+}
+
+export function useTrainingSession({
+  members,
+  session,
+  sessionId,
+  dayId,
+  history,
+}: {
+  members: SheetItem[]
+  session: WorkoutSession | undefined
+  sessionId: string | null
+  dayId: string
+  history: Record<string, ExerciseHistory>
+}) {
   const rounds = members[0].ex.sets
 
-  // Registro por miembro (A/B…) × ronda, sembrado del mock. Los tres estados
-  // se encadenan: el cursor sale del registro y el borrador, del cursor.
-  const [memberLogs, setMemberLogs] = useState<SetEntry[][]>(() => seed(members))
-  const [cursor, setCursor] = useState<Cursor>(() =>
-    firstPending(memberLogs, rounds)
-  )
+  const saveSetLogs = useSaveSetLogs(sessionId ?? "", dayId)
+  const deleteSetLog = useDeleteSetLog(sessionId ?? "", dayId)
+
+  // Registro por miembro (A/B…) × ronda. Los tres estados se encadenan: el
+  // cursor sale del registro y el borrador, del cursor.
+  const [memberLogs, setMemberLogs] = useState<SetEntry[][]>(() => blank(members))
+  const [cursor, setCursor] = useState<Cursor>({ round: 0, member: 0 })
   const [draft, setDraft] = useState<Draft>(() =>
-    prefill(memberLogs, members, cursor.member, cursor.round)
+    prefill(blank(members), members, 0, 0, history)
   )
   // Celda enfocada + paso elegido para cada una: el stepper es uno solo.
   const [field, setField] = useState<Field>("weight")
@@ -104,15 +155,57 @@ export function useTrainingSession(members: SheetItem[]) {
   // Descanso: aparece recién al completar una serie / cerrar una vuelta.
   const [resting, setResting] = useState(false)
 
-  const activeMember = members[cursor.member]
+  // Sembrar desde la sesión UNA sola vez: los refetch posteriores (los dispara
+  // cada guardado) no pueden pisar lo que estás cargando en pantalla.
+  const seededRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!session) return
+    if (seededRef.current === session.id) return
+    seededRef.current = session.id
+    const logs = seedFrom(session, members)
+    const c = firstPending(logs, rounds)
+    setMemberLogs(logs)
+    setCursor(c)
+    setDraft(prefill(logs, members, c.member, c.round, history))
+    setField("weight")
+    setResting(false)
+  }, [session, members, rounds, history])
+
+  const activeMember = members[cursor.member] ?? members[0]
   const ex = activeMember.ex
+
+  // ── persistencia ──────────────────────────────────────────────────────────
+
+  const push = useCallback(
+    (upserts: SetLogUpsert[]) => {
+      if (!sessionId || upserts.length === 0) return
+      saveSetLogs.mutate(upserts, {
+        onError: () => toast.error("No se pudo guardar la serie."),
+      })
+    },
+    [sessionId, saveSetLogs]
+  )
+
+  /** Borra del servidor las series de estas rondas (resetear = volver a pendiente). */
+  const drop = useCallback(
+    (roundIndexes: number[]) => {
+      if (!sessionId) return
+      for (const round of roundIndexes) {
+        for (const it of members) {
+          const id = findSetLogId(session, it.ex.id, round + 1)
+          if (id) deleteSetLog.mutate(id)
+        }
+      }
+    },
+    [sessionId, members, session, deleteSetLog]
+  )
 
   // ── derivados ─────────────────────────────────────────────────────────────
 
   const unitStatuses: SetStatus[] = Array.from({ length: rounds }, (_, r) => {
-    const entries = members.map((_, m) => memberLogs[m][r])
-    if (entries.every((e) => e.status === "done")) return "done"
-    if (entries.every((e) => e.status === "skipped")) return "skipped"
+    const entries = members.map((_, m) => memberLogs[m]?.[r])
+    if (entries.every((e) => e?.status === "done")) return "done"
+    if (entries.every((e) => e?.status === "skipped")) return "skipped"
     return "pending"
   })
   const allClosed = unitStatuses.every((s) => s !== "pending")
@@ -122,9 +215,11 @@ export function useTrainingSession(members: SheetItem[]) {
       ? ("in-progress" as const)
       : ("pending" as const)
 
-  const lastWeek = HISTORY[ex.name]?.weeks.at(-1)
+  const lastWeek = lastWeekOf(history, ex.name)
   const refSet = lastWeek?.[cursor.round] ?? lastWeek?.[0] ?? null
   const refTop = lastWeek ? topE1RM(lastWeek) : null
+  /** Número de la semana de referencia: el historial es denso desde la 1. */
+  const refWeek = history[ex.name]?.weeks.length ?? 0
 
   const draftWeight = parseNum(draft.weight)
   const draftReps = parseNum(draft.reps)
@@ -149,8 +244,9 @@ export function useTrainingSession(members: SheetItem[]) {
     const nc = advance(cursor, rounds, members.length)
     setMemberLogs(next)
     setCursor(nc)
-    setDraft(prefill(next, members, nc.member, nc.round))
+    setDraft(prefill(next, members, nc.member, nc.round, history))
     setField("weight")
+    push([toUpsert(members[cursor.member].ex.id, cursor.round + 1, entry)])
   }
 
   /** Cierra la unidad en curso. En biserie el descanso llega recién al cerrar
@@ -174,7 +270,7 @@ export function useTrainingSession(members: SheetItem[]) {
   /** Volver a una ronda ya registrada para corregirla. */
   function goToRound(round: number) {
     setCursor({ round, member: 0 })
-    setDraft(prefill(memberLogs, members, 0, round))
+    setDraft(prefill(memberLogs, members, 0, round, history))
     setField("weight")
     setResting(false)
   }
@@ -185,26 +281,31 @@ export function useTrainingSession(members: SheetItem[]) {
     members.forEach((_, m) => (next[m][round] = { status: "pending" }))
     setMemberLogs(next)
     setCursor({ round, member: 0 })
-    setDraft(prefill(next, members, 0, round))
+    setDraft(prefill(next, members, 0, round, history))
     setField("weight")
     setResting(false)
+    drop([round])
   }
 
   function omitRound(round: number) {
     const next = memberLogs.map((arr) => arr.slice())
     members.forEach((_, m) => (next[m][round] = { status: "skipped" }))
     setMemberLogs(next)
+    push(
+      members.map((it) =>
+        toUpsert(it.ex.id, round + 1, { status: "skipped" })
+      )
+    )
   }
 
   function resetExercise() {
-    const cleared = members.map((it) =>
-      Array.from({ length: it.ex.sets }, () => ({ status: "pending" as const }))
-    )
+    const cleared = blank(members)
     setMemberLogs(cleared)
     setCursor({ round: 0, member: 0 })
-    setDraft(prefill(cleared, members, 0, 0))
+    setDraft(prefill(cleared, members, 0, 0, history))
     setField("weight")
     setResting(false)
+    drop(Array.from({ length: rounds }, (_, r) => r))
   }
 
   /** Suma/resta sobre la celda enfocada, con su propio paso. */
@@ -232,11 +333,13 @@ export function useTrainingSession(members: SheetItem[]) {
     field,
     step: steps[field],
     resting,
+    saving: saveSetLogs.isPending || deleteSetLog.isPending,
     // derivados
     unitStatuses,
     allClosed,
     slotState,
     refSet,
+    refWeek,
     refE1rm,
     liveE1rm,
     e1rmDelta,

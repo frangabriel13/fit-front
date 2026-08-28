@@ -7,17 +7,19 @@ import { cn } from "@/lib/utils"
 /** Atajo para entrenar el ejercicio, sin abrir el detalle. */
 export function RowActions({
   name,
+  href,
   state,
   className,
 }: {
   name: string
+  href: string
   state: ExerciseState
   className?: string
 }) {
   return (
     <span className={cn("flex items-center justify-end", className)}>
       <Link
-        href="/rutina/entrenar"
+        href={href}
         aria-label={`Entrenar ${name}`}
         onClick={(e) => e.stopPropagation()}
         className={cn(

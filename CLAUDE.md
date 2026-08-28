@@ -28,22 +28,38 @@ The API must allow CORS from the front origin and accept the `Authorization` hea
 
 A mobile-first fitness app (Spanish UI) that consumes an external NestJS REST API. Server state lives in TanStack Query; there is no app-level client store.
 
-### Two parallel realities — know which one you're touching
+### Two surfaces over one data layer
 
-1. **API-wired editor** (`app/splits/[id]`, `app/login`, `components/editor`, `components/auth`, `components/workout`, all `hooks/`). Real CRUD against the API via React Query. This is the working data layer.
-2. **Static-mock UI** (`app/page.tsx` home, `app/rutina`, `app/progreso`, `components/routine`, `components/home`, `components/layout`). The home dashboard links to `/rutina` and `/progreso` — **not** to `/splits`. These screens are pure visual mocks reading hardcoded data from `lib/routine-data.ts` (`ROUTINE`, `SESSION`, `WORKOUT_POSITION`); they have **no backend logic** (`/rutina/entrenar` renders a fixed snapshot — change `WORKOUT_POSITION` to preview a different state). Interactivity arrives when wired to the API.
+Every screen now reads from the API; there is no mock data module. What differs is the audience:
 
-When asked to "add a feature to the workout/routine screen," confirm which reality: the live one (`/splits/.../workout` + `use-sessions`) or the mock one (`/rutina/entrenar` + `routine-data.ts`).
+1. **Editor** (`app/splits/*`, `components/editor`, `components/splits`). CRUD over the nested model — build and edit a routine. Plain UI.
+2. **Trainee flow** (`app/rutina`, `app/rutina/entrenar`, `app/progreso`, `components/routine`, `components/progress`). Reads the same resources through `hooks/use-my-plan.ts` and renders them in the "planilla" idiom. This is the designed surface; the home dashboard links here.
+
+`components/workout` (`/splits/[id]/days/[dayId]/workout`) is the editor-side grid: a debounced spreadsheet for filling in a whole day at once. `/rutina/entrenar` is the phone-side, one-set-at-a-time flow. They overlap on purpose — different postures, same endpoints.
+
+### The planilla layer
+
+The API stores numbers; the screens speak abbreviations. Three pure modules do the translation and hold the domain vocabulary:
+
+- `lib/plan.ts` — `DayExercise` → `PlanExercise`: rep/RIR ranges, `toFailure`, rest seconds → `"8-10"`, `"0-F"`, `"2'30''"`, plus `supersetGroup` → `superset`. Also `microcycleForWeek()`, which is how "the current week" becomes a set of days.
+- `lib/sheet.ts` — numbering: one block per exercise, supersets share a number with an A/B suffix.
+- `lib/set-logs.ts` — `SetLog` (two booleans) → `SetEntry` (one status: done / skipped / pending), and back.
+
+Nothing above these modules should format a rep range or read `completed`/`skipped` directly.
 
 ### Data layer
 
 - `lib/api.ts` — single axios instance. Request interceptor attaches `Authorization: Bearer <token>`; response interceptor on `401` clears the token and hard-redirects to `/login`. `unwrap<T>()` strips `response.data` with typing.
-- `hooks/use-*.ts` — one hook module per resource (`use-splits`, `use-microcycles`, `use-days`, `use-exercises`, `use-sessions`, `use-auth`). All `"use client"`. Mutations invalidate via the centralized key factory in `lib/query-keys.ts`. `use-sessions` does **optimistic** batch upserts (`PUT /sessions/:id/set-logs`) keyed by `dayExerciseId:setNumber`.
+- `hooks/use-*.ts` — one hook module per resource (`use-splits`, `use-microcycles`, `use-days`, `use-exercises`, `use-sessions`, `use-progress`, `use-auth`). All `"use client"`. Mutations invalidate via the centralized key factory in `lib/query-keys.ts`. `use-sessions` does **optimistic** batch upserts (`PUT /sessions/:id/set-logs`) keyed by `dayExerciseId:setNumber`; optimistic rows carry a fake id (`OPTIMISTIC_ID_PREFIX`) that must never reach a `DELETE`.
+- `hooks/use-my-plan.ts` — the composite the trainee screens use: splits → detail → progress, resolved to the current week's `PlanDay[]` plus history by exercise name. Takes the **first** split (no multi-routine selector yet).
+- `hooks/use-active-session.ts` — `useTodaysSession` reads today's session; `useActiveSession` creates one if missing. Viewing a routine must not open a session, so `/rutina` uses the read-only one and only `/rutina/entrenar` uses the creating one.
 - `types/api.ts` — hand-maintained mirror of the API contract. `lib/schemas.ts` — zod v4 form schemas (used with react-hook-form via `@hookform/resolvers`); empty strings coerce to `undefined` for optional numeric/text inputs.
 
 ### Domain model (nested)
 
-`Split → Microcycle → Day → DayExercise`, plus `WorkoutSession → SetLog[]` recorded per day. Entering the workout screen resumes today's session if one exists, else creates one.
+`Split → Microcycle → Day → DayExercise`, plus `WorkoutSession → SetLog[]` recorded per day. Entering the workout screen resumes today's session if one exists, else creates one. A Split is a macrocycle and a Microcycle is a week — `GET /splits/:id/progress` returns which week is current plus per-exercise history, and that is what drives both the week bar and the progression chart.
+
+`/rutina/entrenar` keeps its position in the URL (`?dia=<dayId>&ej=<dayExerciseId>`), so moving between exercises is real navigation: back button works and each slot mounts with clean state.
 
 ### Auth
 
@@ -51,7 +67,9 @@ JWT is stored in a **non-httpOnly** cookie `fitfront_token` (`lib/auth.ts`) — 
 
 ### Mock layer (temporary)
 
-`lib/mocks/auth-mock.ts` is installed in `lib/api.ts` only when `NEXT_PUBLIC_USE_MOCKS=true`. It fakes `/auth/login` and `/auth/me` with hardcoded users and delegates everything else to the real adapter. The contract matches the real backend — to go live, set the flag to `false` (or delete `lib/mocks/` and its import in `lib/api.ts`). Likewise `lib/routine-data.ts` is placeholder data to be replaced by API calls.
+`lib/mocks/auth-mock.ts` is installed in `lib/api.ts` only when `NEXT_PUBLIC_USE_MOCKS=true`. It fakes `/auth/login` and `/auth/me` with hardcoded users and delegates everything else to the real adapter — an escape hatch for working with no backend. The flag is `false` in normal development.
+
+`docs/API-CONTRACT.md` is the shared spec with the backend repo, including the open items (session scoping across trainer/client, viewing a client's routine).
 
 ## Conventions
 
