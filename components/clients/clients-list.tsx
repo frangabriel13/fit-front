@@ -54,7 +54,7 @@ export function ClientsList() {
       {clients.map((c, i) => (
         <li key={c.id}>
           <Link
-            href="/rutina"
+            href={`/clientes/${c.id}`}
             style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
             className="fade-up group flex items-center gap-4 rounded-2xl border border-hairline bg-surface px-4 py-4 transition-colors hover:border-edge"
           >

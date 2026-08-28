@@ -3,11 +3,11 @@
 import Link from "next/link"
 
 import { Notice } from "@/components/feedback/notice"
-import { ProgressionRail } from "@/components/routine/progression-rail"
+import { ProgressList } from "@/components/progress/progress-list"
 import { WeekBar } from "@/components/routine/week-bar"
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useMyPlan } from "@/hooks/use-my-plan"
+import { usePlan } from "@/hooks/use-plan"
 
 function Loading() {
   return (
@@ -19,16 +19,10 @@ function Loading() {
   )
 }
 
-/**
- * El progreso del macrociclo, ejercicio por ejercicio.
- *
- * Solo aparecen los ejercicios con al menos una semana cerrada: el historial lo
- * arma la API a partir de las series completadas, así que una rutina recién
- * empezada muestra el vacío — y eso es información, no un error.
- */
+/** El progreso del macrociclo de quien está logueado, ejercicio por ejercicio. */
 export function ProgressScreen() {
   const { split, history, week, totalWeeks, isPending, isError, isEmpty } =
-    useMyPlan()
+    usePlan()
 
   if (isPending) return <Loading />
   if (isError) return <Notice>No se pudo cargar tu progreso.</Notice>
@@ -75,24 +69,7 @@ export function ProgressScreen() {
           </Link>
         </Notice>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {exercises.map((ex, i) => (
-            <li
-              key={ex.name}
-              style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-              className="fade-up rounded-2xl border border-hairline bg-surface p-5"
-            >
-              <h2 className="mb-4 truncate font-display text-lg leading-none uppercase">
-                {ex.name}
-              </h2>
-              <ProgressionRail
-                history={ex}
-                week={week}
-                totalWeeks={totalWeeks}
-              />
-            </li>
-          ))}
-        </ul>
+        <ProgressList exercises={exercises} week={week} totalWeeks={totalWeeks} />
       )}
     </>
   )

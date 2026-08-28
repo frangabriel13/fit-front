@@ -6,10 +6,17 @@ import { api, unwrap } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import type { Split, SplitPayload } from "@/types/api"
 
-export function useSplits() {
+/**
+ * Las rutinas de quien está logueado, o —con `clientId`— las de un cliente de
+ * su cartera. Sin el parámetro se comporta igual que antes.
+ */
+export function useSplits(clientId?: string) {
   return useQuery({
-    queryKey: queryKeys.splits.all,
-    queryFn: () => unwrap<Split[]>(api.get("/splits")),
+    queryKey: queryKeys.splits.all(clientId),
+    queryFn: () =>
+      unwrap<Split[]>(
+        api.get("/splits", { params: clientId ? { clientId } : undefined })
+      ),
   })
 }
 
@@ -27,7 +34,7 @@ export function useCreateSplit() {
     mutationFn: (payload: SplitPayload) =>
       unwrap<Split>(api.post("/splits", payload)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.splits.all })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
     },
   })
 }
@@ -38,7 +45,7 @@ export function useUpdateSplit() {
     mutationFn: ({ id, ...payload }: SplitPayload & { id: string }) =>
       unwrap<Split>(api.patch(`/splits/${id}`, payload)),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.splits.all })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
       queryClient.invalidateQueries({
         queryKey: queryKeys.splits.detail(variables.id),
       })
@@ -51,7 +58,7 @@ export function useDeleteSplit() {
   return useMutation({
     mutationFn: (id: string) => unwrap(api.delete(`/splits/${id}`)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.splits.all })
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
     },
   })
 }

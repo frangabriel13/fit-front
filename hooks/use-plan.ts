@@ -8,18 +8,23 @@ import { microcycleForWeek, toPlanDays, type PlanDay } from "@/lib/plan"
 import type { ExerciseHistory, Split } from "@/types/api"
 
 /**
- * "Mi rutina": la rutina activa del usuario, ya resuelta a los días de la
- * semana en curso.
+ * La rutina activa, ya resuelta a los días de la semana en curso.
+ *
+ * Sin `userId` es la de quien está logueado; con `userId`, la de un cliente de
+ * la cartera (el backend lo filtra y verifica que sea tuyo).
  *
  * Son tres llamadas encadenadas (lista → detalle → progreso) y no una, porque
- * la API las expone así. Se juntan acá para que las pantallas pidan "mi rutina"
+ * la API las expone así. Se juntan acá para que las pantallas pidan "la rutina"
  * y no tengan que saber que un macrociclo son microciclos y que la semana de
  * hoy la decide el progreso.
  *
  * De momento se toma la PRIMERA rutina de la lista. Cuando un usuario pueda
  * tener varias asignadas a la vez, acá es donde entra el selector.
+ *
+ * OJO con el nombre del parámetro: la API lo llama `clientId` en `/splits` y
+ * `userId` en progreso y sesiones. Es la misma persona.
  */
-export function useMyPlan(): {
+export function usePlan(userId?: string): {
   split: Split | undefined
   days: PlanDay[]
   week: number
@@ -30,10 +35,10 @@ export function useMyPlan(): {
   /** El usuario no tiene ninguna rutina asignada (no es un error). */
   isEmpty: boolean
 } {
-  const splitsQuery = useSplits()
+  const splitsQuery = useSplits(userId)
   const splitId = splitsQuery.data?.[0]?.id ?? ""
   const splitQuery = useSplit(splitId)
-  const progressQuery = useProgress(splitId)
+  const progressQuery = useProgress(splitId, userId)
 
   const week = progressQuery.data?.week ?? 1
   const microcycle = useMemo(

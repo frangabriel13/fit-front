@@ -20,6 +20,7 @@ export function RowDetail({
   history,
   week,
   totalWeeks,
+  readOnly = false,
 }: {
   ex: PlanExercise
   dayId: string
@@ -27,6 +28,7 @@ export function RowDetail({
   history: ExerciseHistory | undefined
   week: number
   totalWeeks: number
+  readOnly?: boolean
 }) {
   const prevWeek = history?.weeks.at(-1) ?? null
   const hasPrev = prevWeek != null
@@ -104,7 +106,7 @@ export function RowDetail({
         )}
       </div>
 
-      <DetailActions href={trainHref(dayId, ex.id)} />
+      {!readOnly && <DetailActions href={trainHref(dayId, ex.id)} />}
     </div>
   )
 }

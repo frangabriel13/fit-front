@@ -22,24 +22,33 @@ import type { ExerciseHistory } from "@/types/api"
  *
  * Mira la sesión de hoy pero no la crea: entrar a ver la planilla no es empezar
  * a entrenar. La sesión nace recién en `/rutina/entrenar`.
+ *
+ * En `readOnly` desaparecen todos los caminos a entrenar: un entrenador mirando
+ * a un cliente ve el estado del día, no un botón para entrenar por él.
  */
 export function RoutineView({
   days,
   history,
   week,
   totalWeeks,
+  userId,
+  readOnly = false,
 }: {
   days: PlanDay[]
   history: Record<string, ExerciseHistory>
   week: number
   totalWeeks: number
+  /** De quién son las series que se muestran. Sin esto, las propias. */
+  userId?: string
+  /** Vista de entrenador: se ve cómo viene el día, pero no se entrena desde acá. */
+  readOnly?: boolean
 }) {
   const [active, setActive] = useState(0)
   const [expanded, setExpanded] = useState<string | null>(null)
   const day = days[Math.min(active, days.length - 1)]
   const items = toSheetItems(day.exercises)
 
-  const { sessionId, session } = useTodaysSession(day.id)
+  const { sessionId, session } = useTodaysSession(day.id, userId)
   const entriesOf = (exerciseId: string, sets: number) =>
     entriesFor(session?.setLogs, exerciseId, sets)
 
@@ -68,6 +77,7 @@ export function RoutineView({
         hasSession={hasSession}
         startedAt={session ? hhmm(session.performedAt) : null}
         doneCount={doneCount}
+        readOnly={readOnly}
       />
 
       <SheetHeader />
@@ -87,11 +97,14 @@ export function RoutineView({
             totalWeeks={totalWeeks}
             expanded={expanded === item.ex.id}
             onToggle={() => toggle(item.ex.id)}
+            readOnly={readOnly}
           />
         ))}
       </ul>
 
-      <SessionCta day={day} hasSession={hasSession} doneCount={doneCount} />
+      {!readOnly && (
+        <SessionCta day={day} hasSession={hasSession} doneCount={doneCount} />
+      )}
     </div>
   )
 }
