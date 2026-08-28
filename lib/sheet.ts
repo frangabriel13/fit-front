@@ -1,18 +1,16 @@
-import type { RoutineExercise } from "@/lib/routine-data"
+import type { PlanExercise } from "@/lib/plan"
 
 /**
- * El lenguaje "planilla": cómo se numera y se abrevia una rutina en papel.
+ * El lenguaje "planilla": cómo se numera y se agrupa una rutina en papel.
  * Puro y sin JSX — lo consumen tanto el overview (/rutina) como el modo
  * entrenamiento (/rutina/entrenar).
+ *
+ * Las abreviaturas de reps/RIR/descanso ya vienen resueltas en `lib/plan.ts`,
+ * que es donde los números de la API se vuelven texto.
  */
 
-/** Abreviaturas de planilla: "10 a 12" → "10-12", "0 o fallo" → "0-F". */
-export function sheet(value: string): string {
-  return value.replace(" o fallo", "-F").replaceAll(" a ", "-")
-}
-
 export interface SheetItem {
-  ex: RoutineExercise
+  ex: PlanExercise
   num: string
   letter?: string
   /** Primera(s) mitad(es) de una superserie: encadena sin pausa con la siguiente. */
@@ -23,7 +21,7 @@ export interface SheetItem {
  * Numera los ejercicios de un día como en una planilla: uno por bloque, y las
  * superseries comparten número con sufijo A/B (04A Abducciones + 04B Adducciones).
  */
-export function toSheetItems(exercises: RoutineExercise[]): SheetItem[] {
+export function toSheetItems(exercises: PlanExercise[]): SheetItem[] {
   const items: SheetItem[] = []
   let i = 0
   let block = 0

@@ -3,7 +3,8 @@ import { Play } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Button } from "@/components/ui/button"
-import type { RoutineDay } from "@/lib/routine-data"
+import type { PlanDay } from "@/lib/plan"
+import { trainHref } from "@/lib/routes"
 
 /** CTA de sesión fijo al pulgar (solo móvil). */
 export function SessionCta({
@@ -11,7 +12,7 @@ export function SessionCta({
   hasSession,
   doneCount,
 }: {
-  day: RoutineDay
+  day: PlanDay
   hasSession: boolean
   doneCount: number
 }) {
@@ -30,7 +31,8 @@ export function SessionCta({
               </span>
             ) : (
               <span className="text-muted-foreground">
-                {day.exercises.length} ejercicios · {day.focus}
+                {day.exercises.length} ejercicios
+                {day.focus && ` · ${day.focus}`}
               </span>
             )}
           </p>
@@ -39,7 +41,7 @@ export function SessionCta({
           asChild
           className="h-12 shrink-0 px-6 text-[12px] font-semibold tracking-[0.16em] uppercase shadow-[0_8px_30px_-10px] shadow-primary/50"
         >
-          <Link href="/rutina/entrenar">
+          <Link href={trainHref(day.id)}>
             <Play className="size-4 fill-current" />
             {hasSession ? "Reanudar" : "Comenzar"}
           </Link>

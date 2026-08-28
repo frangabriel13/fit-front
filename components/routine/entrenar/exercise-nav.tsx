@@ -1,16 +1,22 @@
 import Link from "next/link"
 import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react"
 
-import { slotState, slotTitle, type Slot } from "./slots"
+import { slotState, slotTitle, type EntriesLookup, type Slot } from "./slots"
 
 /** Saltar al ejercicio anterior/siguiente, y reiniciar el actual. */
 export function ExerciseNav({
   prev,
+  prevHref,
   next,
+  nextHref,
+  entriesOf,
   onReset,
 }: {
   prev?: Slot
+  prevHref: string
   next?: Slot
+  nextHref: string
+  entriesOf: EntriesLookup
   onReset: () => void
 }) {
   return (
@@ -18,14 +24,14 @@ export function ExerciseNav({
       <div className="flex items-center justify-between gap-4 font-mono text-[11px] tracking-[0.14em] uppercase">
         {prev ? (
           <Link
-            href="/rutina/entrenar"
+            href={prevHref}
             className="group inline-flex min-w-0 items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
             <span className="truncate">
               {prev.num} {slotTitle(prev)}
             </span>
-            {slotState(prev) === "done" && (
+            {slotState(prev, entriesOf) === "done" && (
               <span className="shrink-0 text-muted-foreground">✓</span>
             )}
           </Link>
@@ -34,7 +40,7 @@ export function ExerciseNav({
         )}
         {next ? (
           <Link
-            href="/rutina/entrenar"
+            href={nextHref}
             className="group inline-flex min-w-0 items-center gap-2 text-right text-muted-foreground transition-colors hover:text-foreground"
           >
             <span className="truncate">

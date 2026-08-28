@@ -1,9 +1,9 @@
 "use client"
 
-import { SESSION } from "@/lib/routine-data"
-import { sheet, type SheetItem } from "@/lib/sheet"
-import { exerciseState } from "@/lib/training-math"
+import type { SheetItem } from "@/lib/sheet"
+import { exerciseState, type SetEntry } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
+import type { ExerciseHistory } from "@/types/api"
 import { COLS } from "./columns"
 import { NumberChip } from "./number-chip"
 import { RowActions } from "./row-actions"
@@ -11,16 +11,26 @@ import { RowDetail } from "./row-detail"
 
 /** Fila de ejercicio: simple, o miembro A/B de una superserie. */
 export function SheetRow({
+  dayId,
   item,
+  entries,
+  history,
+  week,
+  totalWeeks,
   expanded,
   onToggle,
 }: {
+  dayId: string
   item: SheetItem
+  entries: SetEntry[]
+  history: ExerciseHistory | undefined
+  week: number
+  totalWeeks: number
   expanded: boolean
   onToggle: () => void
 }) {
   const { ex, num, letter, chains } = item
-  const state = exerciseState(SESSION.logs[ex.name])
+  const state = exerciseState(entries)
 
   return (
     <li
@@ -58,8 +68,8 @@ export function SheetRow({
             {ex.name}
           </span>
           <span className="mt-1.5 block font-mono text-[12px] text-muted-foreground md:hidden">
-            {ex.sets} × {sheet(ex.reps)} · RIR {sheet(ex.effort)} ·{" "}
-            {chains ? <span className="text-primary/80">→</span> : sheet(ex.rest)}
+            {ex.sets} × {ex.reps} · RIR {ex.effort} ·{" "}
+            {chains ? <span className="text-primary/80">→</span> : ex.rest}
           </span>
         </div>
 
@@ -67,10 +77,10 @@ export function SheetRow({
           {ex.sets}
         </span>
         <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
-          {sheet(ex.reps)}
+          {ex.reps}
         </span>
         <span className="hidden text-center font-mono text-[13px] text-foreground/90 md:block">
-          {sheet(ex.effort)}
+          {ex.effort}
         </span>
         <span
           className={cn(
@@ -78,13 +88,27 @@ export function SheetRow({
             chains ? "text-primary/80" : "text-foreground/90"
           )}
         >
-          {chains ? "→" : sheet(ex.rest)}
+          {chains ? "→" : ex.rest}
         </span>
 
-        <RowActions name={ex.name} state={state} className="shrink-0" />
+        <RowActions
+          name={ex.name}
+          href={`/rutina/entrenar?dia=${dayId}&ej=${ex.id}`}
+          state={state}
+          className="shrink-0"
+        />
       </div>
 
-      {expanded && <RowDetail ex={ex} />}
+      {expanded && (
+        <RowDetail
+          ex={ex}
+          dayId={dayId}
+          entries={entries}
+          history={history}
+          week={week}
+          totalWeeks={totalWeeks}
+        />
+      )}
     </li>
   )
 }

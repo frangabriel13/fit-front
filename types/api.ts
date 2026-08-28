@@ -17,12 +17,23 @@ export interface DayExercise {
   targetRestSeconds?: number | null
   targetRir?: number | null
   notes?: string | null
+  /** Objetivo de reps como rango: 10 a 12. Iguales = número fijo. */
+  targetRepsMin?: number | null
+  targetRepsMax?: number | null
+  /** Objetivo de esfuerzo como rango de RIR. */
+  targetRirMin?: number | null
+  targetRirMax?: number | null
+  /** Al fallo: reemplaza (o cierra) el rango de RIR. */
+  toFailure?: boolean
+  /** Agrupa ejercicios encadenados: mismo valor = superserie (04A + 04B). */
+  supersetGroup?: string | null
 }
 
 export interface Day {
   id: string
   name: string
   order: number
+  focus?: string | null
   exercises: DayExercise[]
 }
 
@@ -48,6 +59,8 @@ export interface SetLog {
   actualRir?: number | null
   weight?: number | null
   completed: boolean
+  /** Serie omitida a propósito. Distinta de "pendiente": ya se decidió. */
+  skipped?: boolean
 }
 
 export interface WorkoutSession {
@@ -104,6 +117,7 @@ export interface SetLogUpsert {
   actualRir?: number
   weight?: number
   completed: boolean
+  skipped?: boolean
 }
 
 export interface SetLogPatch {
@@ -111,4 +125,30 @@ export interface SetLogPatch {
   actualRir?: number
   weight?: number
   completed?: boolean
+  skipped?: boolean
+}
+
+// ---- Progreso del macrociclo (GET /splits/:id/progress) ----
+
+/** Una serie del historial. Peso y reps siempre presentes; el RIR puede faltar. */
+export interface HistorySet {
+  weight: number
+  reps: number
+  rir: number | null
+}
+
+export interface ExerciseHistory {
+  /** Se correlaciona por NOMBRE entre semanas: cada microciclo tiene sus filas. */
+  name: string
+  /** Una entrada por semana COMPLETADA, densa desde la 1. La actual no va acá. */
+  weeks: HistorySet[][]
+}
+
+export interface SplitProgress {
+  splitId: string
+  /** Semana en curso, 1-based. */
+  week: number
+  /** Microciclos vivos del macrociclo. */
+  totalWeeks: number
+  exercises: ExerciseHistory[]
 }

@@ -6,13 +6,6 @@ import { Timer } from "lucide-react"
 import { Eyebrow } from "@/components/typography/eyebrow"
 
 
-/** "4'" → 240, "90''" → 90. Descanso a segundos. */
-function restToSeconds(rest: string): number {
-  const n = parseInt(rest.replace(/\D/g, ""), 10)
-  if (Number.isNaN(n)) return 0
-  return rest.includes("''") ? n : n * 60
-}
-
 /** Segundos → "M:SS". */
 function fmtClock(total: number): string {
   const t = Math.max(0, total)
@@ -21,19 +14,19 @@ function fmtClock(total: number): string {
 
 /**
  * Temporizador de descanso con cuenta regresiva. Se monta al entrar al descanso
- * y arranca solo desde la duración del ejercicio; `−15s` resta, `seguir` corta,
+ * y arranca solo desde la duración pautada del ejercicio; `−15s` resta, `seguir` corta,
  * y al llegar a 0 avisa con onDone. Compacto: vive en el pie fijo.
  */
 export function RestTimer({
-  rest,
+  seconds,
   onSkip,
   onDone,
 }: {
-  rest: string
+  seconds: number
   onSkip: () => void
   onDone: () => void
 }) {
-  const total = restToSeconds(rest)
+  const total = seconds
   const [left, setLeft] = useState(total)
 
   // Un solo intervalo mientras está montado; el functional update evita relanzarlo.

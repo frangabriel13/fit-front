@@ -1,9 +1,9 @@
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
-import { HISTORY, MACROCYCLE, SESSION } from "@/lib/routine-data"
-import { topE1RM } from "@/lib/training-math"
+import { topE1RM, type SetEntry } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
+import type { ExerciseHistory } from "@/types/api"
 
 /** Progresión del macrociclo: un nodo por semana, medido en 1RM estimado. */
 
@@ -45,20 +45,32 @@ function TrendNote({ trend, gain }: { trend: Trend; gain: number }) {
   )
 }
 
-export function ProgressionRail({ name }: { name: string }) {
-  const hist = HISTORY[name]
-  if (!hist) return null
-
-  const todayDone = (SESSION.logs[name] ?? []).filter((s) => s.status === "done")
+export function ProgressionRail({
+  history,
+  week,
+  totalWeeks,
+  today,
+}: {
+  history: ExerciseHistory | undefined
+  /** Semana en curso del macrociclo, 1-based. */
+  week: number
+  totalWeeks: number
+  /** Series de hoy, si el ejercicio se está entrenando ahora. */
+  today?: SetEntry[]
+}) {
+  const weeks = history?.weeks ?? []
+  const todayDone = (today ?? []).filter((s) => s.status === "done")
   const todayTop = todayDone.length ? topE1RM(todayDone) : null
+
+  if (weeks.length === 0 && todayTop == null) return null
 
   // Un nodo por semana del macrociclo. El valor es el 1RM estimado (e1RM):
   // combina peso y reps, así "mismo peso, más reps" también sube la barra.
-  const nodes = Array.from({ length: MACROCYCLE.totalWeeks }, (_, i) => {
-    const week = i + 1
-    const past = hist.weeks[i]
-    const today = week === MACROCYCLE.week
-    return { week, value: past ? topE1RM(past) : today ? todayTop : null, today }
+  const nodes = Array.from({ length: totalWeeks }, (_, i) => {
+    const n = i + 1
+    const past = weeks[i]
+    const isToday = n === week
+    return { week: n, value: past ? topE1RM(past) : isToday ? todayTop : null, today: isToday }
   })
 
   const values = nodes.map((n) => n.value).filter((v): v is number => v != null)
@@ -71,8 +83,8 @@ export function ProgressionRail({ name }: { name: string }) {
     return Math.max(12, Math.min(100, ((v - baseline) / (max - baseline)) * 100))
   }
 
-  const base = nodes[0]?.value ?? null
-  const ref = todayTop ?? topE1RM(hist.weeks.at(-1) ?? [])
+  const base = values[0] ?? null
+  const ref = todayTop ?? topE1RM(weeks.at(-1) ?? [])
   const gain = ref != null && base != null ? Math.round(ref - base) : null
   const trend: Trend | null =
     gain == null ? null : gain >= 1 ? "up" : gain <= -1 ? "down" : "flat"

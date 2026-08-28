@@ -1,5 +1,5 @@
 import { Eyebrow } from "@/components/typography/eyebrow"
-import { sheet, type SheetItem } from "@/lib/sheet"
+import type { SheetItem } from "@/lib/sheet"
 import { cn } from "@/lib/utils"
 
 /**
@@ -34,7 +34,7 @@ export function ExerciseHeader({
             const isActive = mi === activeIndex
             return (
               <h1
-                key={it.ex.name}
+                key={it.ex.id}
                 className={cn(
                   "font-display text-[clamp(19px,6.2cqi,25px)] leading-[1.05] uppercase",
                   isActive ? "text-foreground" : "text-faint"
@@ -60,8 +60,8 @@ export function ExerciseHeader({
       )}
 
       <p className="mt-2 font-mono text-[10px] text-muted-foreground">
-        {rounds} {isSuper ? "vueltas" : "×"} {sheet(ex.reps)} · RIR{" "}
-        {sheet(ex.effort)} · desc {sheet(ex.rest)}
+        {rounds} {isSuper ? "vueltas" : "×"} {ex.reps} · RIR {ex.effort} · desc{" "}
+        {ex.rest}
       </p>
     </div>
   )

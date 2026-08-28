@@ -7,26 +7,45 @@ import { SessionCard } from "@/components/routine/sheet/session-card"
 import { SessionCta } from "@/components/routine/sheet/session-cta"
 import { SheetHeader } from "@/components/routine/sheet/sheet-header"
 import { SheetRow } from "@/components/routine/sheet/sheet-row"
-import { ROUTINE, SESSION } from "@/lib/routine-data"
+import { useTodaysSession } from "@/hooks/use-active-session"
+import type { PlanDay } from "@/lib/plan"
+import { hhmm } from "@/lib/dates"
 import { toSheetItems } from "@/lib/sheet"
+import { entriesFor } from "@/lib/set-logs"
 import { exerciseState } from "@/lib/training-math"
+import type { ExerciseHistory } from "@/types/api"
 
 /**
  * Overview de la rutina: la planilla completa del día, con una fila expandible
  * por ejercicio. Este archivo es solo composición — cada pieza vive en
  * `components/routine/sheet/`.
  *
- * Lee datos MOCK de lib/routine-data (ver CLAUDE.md): no hay backend detrás.
+ * Mira la sesión de hoy pero no la crea: entrar a ver la planilla no es empezar
+ * a entrenar. La sesión nace recién en `/rutina/entrenar`.
  */
-export function RoutineView() {
+export function RoutineView({
+  days,
+  history,
+  week,
+  totalWeeks,
+}: {
+  days: PlanDay[]
+  history: Record<string, ExerciseHistory>
+  week: number
+  totalWeeks: number
+}) {
   const [active, setActive] = useState(0)
   const [expanded, setExpanded] = useState<string | null>(null)
-  const day = ROUTINE.days[active]
+  const day = days[Math.min(active, days.length - 1)]
   const items = toSheetItems(day.exercises)
 
-  const hasSession = day.id === SESSION.dayId
+  const { sessionId, session } = useTodaysSession(day.id)
+  const entriesOf = (exerciseId: string, sets: number) =>
+    entriesFor(session?.setLogs, exerciseId, sets)
+
+  const hasSession = !!sessionId
   const doneCount = day.exercises.filter(
-    (e) => exerciseState(SESSION.logs[e.name]) === "done"
+    (e) => exerciseState(entriesOf(e.id, e.sets)) === "done"
   ).length
 
   const toggle = (key: string) =>
@@ -35,6 +54,7 @@ export function RoutineView() {
   return (
     <div>
       <DayTabs
+        days={days}
         active={active}
         onSelect={(i) => {
           setActive(i)
@@ -46,6 +66,7 @@ export function RoutineView() {
         key={`session-${day.id}`}
         day={day}
         hasSession={hasSession}
+        startedAt={session ? hhmm(session.performedAt) : null}
         doneCount={doneCount}
       />
 
@@ -57,21 +78,18 @@ export function RoutineView() {
       >
         {items.map((item) => (
           <SheetRow
-            key={item.ex.name}
+            key={item.ex.id}
+            dayId={day.id}
             item={item}
-            expanded={expanded === item.ex.name}
-            onToggle={() => toggle(item.ex.name)}
+            entries={entriesOf(item.ex.id, item.ex.sets)}
+            history={history[item.ex.name]}
+            week={week}
+            totalWeeks={totalWeeks}
+            expanded={expanded === item.ex.id}
+            onToggle={() => toggle(item.ex.id)}
           />
         ))}
       </ul>
-
-      {/* Nota de día de ejemplo (placeholder del mock) */}
-      {day.placeholder && (
-        <p className="mt-6 rounded-2xl border border-white/8 bg-white/[0.015] px-5 py-4 font-mono text-[11px] text-muted-foreground">
-          <span className="mr-2 font-semibold text-primary/90">*</span>
-          Día de ejemplo — editalo a gusto.
-        </p>
-      )}
 
       <SessionCta day={day} hasSession={hasSession} doneCount={doneCount} />
     </div>

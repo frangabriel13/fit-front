@@ -1,9 +1,9 @@
 # Contrato de API — FitFront
 
-Este documento describe **la API que el frontend ya espera**. No es una
-propuesta: cada endpoint, path y forma de respuesta está extraído del código
-que ya existe en `hooks/` y `types/api.ts`. Si el backend cumple esto, el
-frontend funciona sin tocar una línea.
+Este documento describe **la API que el frontend consume**. Ya no es una
+propuesta: el frontend está conectado al backend real y todas las pantallas
+leen de acá. Cada endpoint y forma de respuesta está verificado contra
+`http://localhost:3003`.
 
 **Fuente de verdad de los tipos:** `types/api.ts` del repo del frontend.
 Copiarlo tal cual y derivar de ahí los DTOs de NestJS es lo más seguro.
@@ -12,18 +12,16 @@ Copiarlo tal cual y derivar de ahí los DTOs de NestJS es lo más seguro.
 
 ## 0. Cómo se conecta el frontend
 
-Hoy el frontend corre contra una capa de mocks. Para apuntarlo al backend real,
-en `.env.local`:
+En `.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:3000   # base de la API
-NEXT_PUBLIC_USE_MOCKS=false                 # apaga los mocks
+NEXT_PUBLIC_API_URL=http://localhost:3003   # base de la API
+NEXT_PUBLIC_USE_MOCKS=false                 # mocks apagados
 ```
 
-Con `false`, `lib/mocks/` deja de interceptar y todas las llamadas salen a
-`NEXT_PUBLIC_API_URL`. La capa de mocks (`lib/mocks/auth-mock.ts`) es una
-implementación de referencia del contrato: sirve para comparar formas de
-respuesta.
+Con `false`, `lib/mocks/` no intercepta nada y todas las llamadas salen a
+`NEXT_PUBLIC_API_URL`. La capa de mocks queda solo como implementación de
+referencia de `/auth/*` para trabajar sin backend.
 
 **CORS:** el frontend corre en `http://localhost:3002`. Habilitar ese origen.
 
@@ -127,6 +125,7 @@ busca el día dentro de esa estructura, no hace una llamada aparte.
 | `POST` | `/days/:dayId/sessions` | `{}` | `WorkoutSession` |
 | `PUT` | `/sessions/:id/set-logs` | `{ setLogs: SetLogUpsert[] }` | `WorkoutSession` |
 | `PATCH` | `/set-logs/:id` | `SetLogPatch` | `SetLog` |
+| `DELETE` | `/set-logs/:id` | — | 204 |
 
 **Detalles que el frontend asume:**
 
@@ -145,6 +144,29 @@ busca el día dentro de esa estructura, no hace una llamada aparte.
   seguidas y ser idempotente.
 - Campos numéricos ausentes (`actualReps`, `actualRir`, `weight`) significan
   "sin dato" → guardar `NULL`, no `0`.
+- **`DELETE /set-logs/:id` es lo que hace que "resetear" funcione.** Un upsert
+  no puede expresar "esta serie nunca pasó": dejarla en `completed: false` la
+  volvería a mostrar a medio llenar. El modo entrenamiento borra la fila.
+- **`skipped`** distingue "omitida a propósito" de "todavía sin hacer".
+  `completed: false, skipped: true` = omitida; ausente en la base = pendiente.
+
+### Progreso del macrociclo
+
+| método | path | query | respuesta |
+|---|---|---|---|
+| `GET` | `/splits/:splitId/progress` | `userId?` | `SplitProgress` |
+
+Posición en el macrociclo (`week` / `totalWeeks`) más el historial por
+ejercicio, en una sola llamada: el gráfico de progresión necesita las dos cosas
+a la vez, porque la semana en curso es lo que distingue "hoy" de lo ya cerrado.
+
+- El historial se correlaciona **por nombre** de ejercicio entre semanas.
+  Renombrar un ejercicio a mitad del macrociclo parte su historial en dos.
+- `weeks` es **denso desde la semana 1** (índice 0 = Semana 1) y **NO incluye la
+  semana en curso**: esa sale de la sesión viva. Mandarla rompe el gráfico, que
+  distingue "semana pasada" de "hoy" justamente por la ausencia.
+- Solo aparecen los ejercicios con al menos una semana registrada. Una rutina
+  recién empezada devuelve `exercises: []`, y el frontend muestra el vacío.
 
 ---
 
@@ -162,9 +184,19 @@ interface DayExercise {
   targetRestSeconds?: number | null
   targetRir?: number | null
   notes?: string | null
+  targetRepsMin?: number | null      // rango de reps: 10 a 12
+  targetRepsMax?: number | null
+  targetRirMin?: number | null       // rango de esfuerzo
+  targetRirMax?: number | null
+  toFailure?: boolean                // al fallo
+  supersetGroup?: string | null      // mismo valor = encadenados (04A + 04B)
 }
 
-interface Day { id: string; name: string; order: number; exercises: DayExercise[] }
+interface Day {
+  id: string; name: string; order: number
+  focus?: string | null              // "Glúteo · Cuádriceps"
+  exercises: DayExercise[]
+}
 interface Microcycle { id: string; name: string; order: number; days: Day[] }
 interface Split { id: string; name: string; description?: string | null; microcycles: Microcycle[] }
 
@@ -174,6 +206,7 @@ interface SetLog {
   actualRir?: number | null
   weight?: number | null
   completed: boolean
+  skipped?: boolean                  // omitida a propósito
 }
 
 interface WorkoutSession {
@@ -195,41 +228,67 @@ interface SetLogUpsert {
   dayExerciseId: string; setNumber: number
   actualReps?: number; actualRir?: number; weight?: number
   completed: boolean
+  skipped?: boolean
 }
 interface SetLogPatch {
-  actualReps?: number; actualRir?: number; weight?: number; completed?: boolean
+  actualReps?: number; actualRir?: number; weight?: number
+  completed?: boolean; skipped?: boolean
+}
+
+// Progreso del macrociclo
+interface HistorySet { weight: number; reps: number; rir: number | null }
+interface ExerciseHistory { name: string; weeks: HistorySet[][] }
+interface SplitProgress {
+  splitId: string; week: number; totalWeeks: number
+  exercises: ExerciseHistory[]
 }
 ```
+
+**Cómo los usa el frontend.** Los números del contrato se traducen a la
+tipografía de planilla en `lib/plan.ts`, que es puro y está probado contra
+datos reales:
+
+| campo(s) | se muestra |
+|---|---|
+| `targetRepsMin/Max` | `8-10`, o `10` si son iguales |
+| `targetRirMin/Max` + `toFailure` | `1-2`, `0-F`, o `F` |
+| `targetRestSeconds` | `75''` por debajo de 2 min, `2'30''` por encima |
+| `supersetGroup` | numeración `04A` / `04B` y la flecha de encadenado |
 
 `order` es un entero para ordenar; el frontend ordena por él (`a.order - b.order`).
 
 ---
 
-## 4. Lo que TODAVÍA no tiene contrato
+## 4. Lo que queda abierto
 
-El frontend tiene **dos realidades** (ver `CLAUDE.md`):
+Ya no hay pantallas mockeadas: `/rutina`, `/rutina/entrenar` y `/progreso` leen
+de la API igual que `/splits/*`, y `lib/routine-data.ts` está borrado.
 
-1. **Cableada a la API** — `/splits/*`: editor de rutinas y modo entrenamiento.
-   Es todo lo de arriba.
-2. **Mock, sin backend** — `/rutina`, `/rutina/entrenar` y `/progreso` leen
-   datos hardcodeados de `lib/routine-data.ts`.
+Lo que sigue sin resolver:
 
-Esa segunda reunión de pantallas es la más nueva y la mejor diseñada, y usa
-conceptos que **el contrato actual no cubre**:
+**Alcance de las sesiones — inconsistente entre listado y detalle.** Con el
+token del entrenador:
 
-- **Macrociclo / semanas.** `MACROCYCLE = { week, totalWeeks }` y un historial
-  por ejercicio con una entrada por semana completada. Hoy no hay endpoint.
-- **Superseries.** Ejercicios encadenados que comparten número de planilla
-  (04A + 04B). En el mock es un campo `superset?: string` que agrupa
-  consecutivos. `DayExercise` no lo tiene.
-- **Reps y RIR como rango en texto** (`"10 a 12"`, `"1 a 0"`, `"0 o fallo"`) y
-  descanso como texto (`"4'"`, `"90''"`). El contrato actual usa números
-  (`targetSets`, `targetRir`, `targetRestSeconds`).
+```
+GET /days/<día de la clienta>/sessions   → []          (filtrado por usuario)
+GET /sessions/<sesión de esa clienta>    → 200 + body  (sin filtrar)
+```
 
-**Decidir esto es parte del trabajo de backend.** Lo razonable es extender
-`DayExercise` (rangos objetivo + `supersetId`) y agregar un endpoint de
-historial por ejercicio, en vez de crear un modelo paralelo. Si cambiás
-`types/api.ts`, avisá: el frontend se adapta.
+El detalle no aplica el mismo criterio que el listado. Como el frontend arma
+"la sesión de hoy" desde el listado, un entrenador que abra el día de un cliente
+no ve la sesión del cliente: `useActiveSession` no la encuentra y **crea una
+sesión nueva a nombre del entrenador**. Hay que decidir cuál de las dos
+respuestas es la correcta y alinear la otra.
+
+**Ver la rutina de un cliente.** El backend ya acepta `?userId=` en
+`GET /days/:dayId/sessions` y en `GET /splits/:id/progress`. El frontend
+todavía no lo manda: `/clientes` linkea a `/rutina`, que muestra la rutina de
+quien está logueado. Cuando se resuelva el punto anterior, es cablear ese
+parámetro.
+
+**Varias rutinas asignadas.** `hooks/use-my-plan.ts` toma la **primera** de
+`GET /splits`. Si un usuario puede tener más de una activa a la vez, hace falta
+un selector — y probablemente una marca de "activa" en el modelo.
 
 ---
 

@@ -53,7 +53,7 @@ export function SetMatrix({
     <div className="fade-up mt-6 grid grid-cols-3 gap-2 [--delay:200ms]">
       {unitStatuses.map((st, r) => {
         const current = r === currentRound
-        const entries = members.map((_, m) => memberLogs[m][r])
+        const entries = members.map((_, m) => memberLogs[m]?.[r])
         return (
           <div
             key={r}
@@ -88,11 +88,11 @@ export function SetMatrix({
               </Eyebrow>
               <span className="mt-1 block space-y-0.5 font-mono text-[11px] tabular-nums">
                 {members.map((it, mi) => (
-                  <span key={it.ex.name} className="block truncate">
+                  <span key={it.ex.id} className="block truncate">
                     {isSuper && (
                       <span className="mr-1 text-faint">{it.letter}</span>
                     )}
-                    <SetRecord s={entries[mi]} />
+                    <SetRecord s={entries[mi] ?? { status: "pending" }} />
                   </span>
                 ))}
               </span>

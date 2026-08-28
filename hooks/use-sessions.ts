@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { api, unwrap } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
+import { OPTIMISTIC_ID_PREFIX } from "@/lib/set-logs"
 import type {
   SetLog,
   SetLogPatch,
@@ -71,13 +72,14 @@ export function useSaveSetLogs(sessionId: string, dayId: string) {
           const key = `${upsert.dayExerciseId}:${upsert.setNumber}`
           const existing = byKey.get(key)
           byKey.set(key, {
-            id: existing?.id ?? `optimistic-${key}`,
+            id: existing?.id ?? `${OPTIMISTIC_ID_PREFIX}${key}`,
             dayExerciseId: upsert.dayExerciseId,
             setNumber: upsert.setNumber,
             actualReps: upsert.actualReps ?? null,
             actualRir: upsert.actualRir ?? null,
             weight: upsert.weight ?? null,
             completed: upsert.completed,
+            skipped: upsert.skipped ?? false,
           })
         }
         queryClient.setQueryData<WorkoutSession>(detailKey, {
@@ -111,6 +113,44 @@ export function useUpdateSetLog(sessionId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.sessions.detail(sessionId),
+      })
+    },
+  })
+}
+
+/**
+ * Borra una serie registrada (DELETE /set-logs/:id).
+ *
+ * Es lo que hace que "resetear" vuelva a PENDIENTE de verdad. Sin esto la fila
+ * queda en la base con `completed: false` y al recargar reaparece como omitida
+ * o a medio llenar — un upsert no puede expresar "esto nunca pasó".
+ */
+export function useDeleteSetLog(sessionId: string, dayId: string) {
+  const queryClient = useQueryClient()
+  const detailKey = queryKeys.sessions.detail(sessionId)
+
+  return useMutation({
+    mutationFn: (id: string) => unwrap(api.delete(`/set-logs/${id}`)),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: detailKey })
+      const previous = queryClient.getQueryData<WorkoutSession>(detailKey)
+      if (previous) {
+        queryClient.setQueryData<WorkoutSession>(detailKey, {
+          ...previous,
+          setLogs: previous.setLogs.filter((l) => l.id !== id),
+        })
+      }
+      return { previous }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(detailKey, context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: detailKey })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.sessions.byDay(dayId),
       })
     },
   })

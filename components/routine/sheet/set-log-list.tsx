@@ -14,7 +14,7 @@ export interface SetLine {
   status: SetStatus
   weight?: number
   reps?: number
-  rir?: number
+  rir?: number | null
   delta?: Delta | null
 }
 
