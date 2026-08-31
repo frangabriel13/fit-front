@@ -103,15 +103,27 @@ export interface MicrocyclePayload {
 export interface DayPayload {
   name: string
   order: number
+  /** "Glúteo · Cuádriceps". Lo muestra la planilla debajo del nombre del día. */
+  focus?: string
 }
 
+/**
+ * Sin `targetRir`: en la base no existe como columna. Al leer es un alias de
+ * `targetRirMin`, y el PATCH lo descarta — mandarlo no haría nada. El objetivo
+ * de esfuerzo se escribe como rango.
+ */
 export interface DayExercisePayload {
   name: string
   order: number
   targetSets: number
   targetRestSeconds?: number
-  targetRir?: number
   notes?: string
+  targetRepsMin?: number
+  targetRepsMax?: number
+  targetRirMin?: number
+  targetRirMax?: number
+  toFailure?: boolean
+  supersetGroup?: string
 }
 
 // Upsert en lote de set-logs (PUT /sessions/:id/set-logs).

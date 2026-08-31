@@ -1,22 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { Pencil, Trash2, Plus, Play } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Day } from "@/types/api"
-import { useDeleteDay } from "@/hooks/use-days"
-import { Button } from "@/components/ui/button"
+import { DayFormDialog } from "@/components/editor/day-form-dialog"
+import { ExerciseFormDialog } from "@/components/editor/exercise-form-dialog"
+import { ExerciseRow } from "@/components/editor/exercise-row"
+import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
+import { Eyebrow } from "@/components/typography/eyebrow"
 import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { ExerciseRow } from "@/components/editor/exercise-row"
-import { ExerciseFormDialog } from "@/components/editor/exercise-form-dialog"
-import { DayFormDialog } from "@/components/editor/day-form-dialog"
-import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
+import { useDeleteDay } from "@/hooks/use-days"
+import type { Day } from "@/types/api"
 
 interface DaySectionProps {
   splitId: string
@@ -32,9 +31,7 @@ export function DaySection({ splitId, microcycleId, day }: DaySectionProps) {
 
   const exercises = [...(day.exercises ?? [])].sort((a, b) => a.order - b.order)
   const nextOrder =
-    exercises.length > 0
-      ? Math.max(...exercises.map((e) => e.order)) + 1
-      : 0
+    exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 0
 
   function onConfirmDelete() {
     deleteDay.mutate(day.id, {
@@ -48,62 +45,67 @@ export function DaySection({ splitId, microcycleId, day }: DaySectionProps) {
 
   return (
     <AccordionItem value={day.id} className="border-b-0">
-      <div className="flex items-center gap-1 pr-1">
-        <AccordionTrigger className="flex-1 px-2">
-          {day.name}
+      <div className="flex items-center gap-1">
+        <AccordionTrigger className="min-w-0 flex-1 py-3 hover:no-underline">
+          <span className="min-w-0 text-left">
+            <span className="flex items-baseline gap-2">
+              <Eyebrow size="sm" tone="meta" className="text-faint">
+                {String(day.order).padStart(2, "0")}
+              </Eyebrow>
+              <span className="truncate font-display text-base leading-none uppercase">
+                {day.name}
+              </span>
+            </span>
+            <span className="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
+              {exercises.length}{" "}
+              {exercises.length === 1 ? "ejercicio" : "ejercicios"}
+              {day.focus && ` · ${day.focus}`}
+            </span>
+          </span>
         </AccordionTrigger>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           onClick={() => setEditOpen(true)}
           aria-label="Editar día"
+          className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
         >
-          <Pencil className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
+          <Pencil className="size-3.5" />
+        </button>
+        <button
+          type="button"
           onClick={() => setDeleteOpen(true)}
           aria-label="Borrar día"
+          className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-destructive"
         >
-          <Trash2 className="size-4" />
-        </Button>
+          <Trash2 className="size-3.5" />
+        </button>
       </div>
-      <AccordionContent className="px-2">
-        <div className="space-y-2">
-          <Button asChild size="sm" className="w-full">
-            <Link href={`/splits/${splitId}/days/${day.id}/workout`}>
-              <Play className="size-4" />
-              Entrenar este día
-            </Link>
-          </Button>
 
+      <AccordionContent>
+        <div className="space-y-2 pb-1">
           {exercises.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
+            <p className="py-2 text-[13px] text-muted-foreground">
               Sin ejercicios todavía.
             </p>
           ) : (
-            <div className="space-y-2">
-              {exercises.map((exercise) => (
-                <ExerciseRow
-                  key={exercise.id}
-                  splitId={splitId}
-                  dayId={day.id}
-                  exercise={exercise}
-                />
-              ))}
-            </div>
+            exercises.map((exercise) => (
+              <ExerciseRow
+                key={exercise.id}
+                splitId={splitId}
+                dayId={day.id}
+                exercise={exercise}
+              />
+            ))
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
+          <button
+            type="button"
             onClick={() => setAddExerciseOpen(true)}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-hairline py-2.5 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:border-edge hover:text-foreground"
           >
-            <Plus className="size-4" />
+            <Plus className="size-3.5" />
             Agregar ejercicio
-          </Button>
+          </button>
         </div>
       </AccordionContent>
 

@@ -2,17 +2,45 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Pencil, Trash2, Plus } from "lucide-react"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
-import { useSplit, useDeleteSplit } from "@/hooks/use-splits"
+import { Notice } from "@/components/feedback/notice"
+import { MicrocycleFormDialog } from "@/components/editor/microcycle-form-dialog"
+import { MicrocycleSection } from "@/components/editor/microcycle-section"
+import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
+import { SplitFormDialog } from "@/components/splits/split-form-dialog"
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MicrocycleSection } from "@/components/editor/microcycle-section"
-import { MicrocycleFormDialog } from "@/components/editor/microcycle-form-dialog"
-import { SplitFormDialog } from "@/components/splits/split-form-dialog"
-import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
+import { useDeleteSplit, useSplit } from "@/hooks/use-splits"
+
+/** Botón de acción secundaria del editor: ícono suelto, sin peso visual. */
+function IconAction({
+  label,
+  onClick,
+  children,
+  destructive = false,
+}: {
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+  destructive?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors ${
+        destructive ? "hover:text-destructive" : "hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
 
 export function SplitEditor({ splitId }: { splitId: string }) {
   const router = useRouter()
@@ -24,24 +52,26 @@ export function SplitEditor({ splitId }: { splitId: string }) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-1/2" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-1/2" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-32 w-full rounded-2xl" />
       </div>
     )
   }
 
   if (isError || !split) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          No se pudo cargar el split.
-        </p>
-        <Button variant="outline" className="mt-3" onClick={() => refetch()}>
+      <Notice>
+        <p>No se pudo cargar la rutina.</p>
+        <Button
+          variant="outline"
+          className="mt-3 h-9 px-4 text-[10px] tracking-[0.16em] uppercase"
+          onClick={() => refetch()}
+        >
           Reintentar
         </Button>
-      </div>
+      </Notice>
     )
   }
 
@@ -49,84 +79,79 @@ export function SplitEditor({ splitId }: { splitId: string }) {
     (a, b) => a.order - b.order
   )
   const nextOrder =
-    microcycles.length > 0
-      ? Math.max(...microcycles.map((m) => m.order)) + 1
-      : 0
+    microcycles.length > 0 ? Math.max(...microcycles.map((m) => m.order)) + 1 : 0
 
   function onConfirmDelete() {
     deleteSplit.mutate(splitId, {
       onSuccess: () => {
-        toast.success("Split borrado")
-        router.replace("/")
+        toast.success("Rutina borrada")
+        router.replace("/splits")
       },
-      onError: () => toast.error("No se pudo borrar el split."),
+      onError: () => toast.error("No se pudo borrar la rutina."),
     })
   }
 
   return (
-    <div className="space-y-4">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link href="/">
-          <ArrowLeft className="size-4" />
-          Volver
-        </Link>
-      </Button>
+    <div>
+      <Link
+        href="/splits"
+        className="fade-up mb-5 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" />
+        Mis rutinas
+      </Link>
 
-      <div className="flex items-start justify-between gap-2">
+      <div className="fade-up mb-7 flex items-start justify-between gap-3 [--delay:60ms]">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold">{split.name}</h1>
+          <Eyebrow as="p" className="font-semibold text-primary">
+            Editando
+          </Eyebrow>
+          <h1 className="mt-1.5 truncate font-display text-4xl leading-none uppercase lg:text-5xl">
+            {split.name}
+          </h1>
           {split.description && (
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-2.5 text-sm text-muted-foreground">
               {split.description}
             </p>
           )}
         </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setEditOpen(true)}
-            aria-label="Editar split"
-          >
+        <div className="flex shrink-0 gap-0.5">
+          <IconAction label="Editar rutina" onClick={() => setEditOpen(true)}>
             <Pencil className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+          </IconAction>
+          <IconAction
+            label="Borrar rutina"
+            destructive
             onClick={() => setDeleteOpen(true)}
-            aria-label="Borrar split"
           >
             <Trash2 className="size-4" />
-          </Button>
+          </IconAction>
         </div>
       </div>
 
       {microcycles.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            Este split no tiene microciclos.
-          </p>
-        </div>
+        <Notice>Esta rutina todavía no tiene semanas.</Notice>
       ) : (
         <div className="space-y-3">
-          {microcycles.map((microcycle) => (
+          {microcycles.map((microcycle, i) => (
             <MicrocycleSection
               key={microcycle.id}
               splitId={splitId}
               microcycle={microcycle}
+              index={i}
             />
           ))}
         </div>
       )}
 
-      <Button
-        variant="outline"
-        className="w-full"
+      <button
+        type="button"
         onClick={() => setAddMicroOpen(true)}
+        className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-edge py-4 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:border-primary hover:text-foreground"
       >
-        <Plus className="size-4" />
-        Agregar microciclo
-      </Button>
+        <Plus className="size-3.5" />
+        Agregar semana
+      </button>
 
       <SplitFormDialog
         open={editOpen}
@@ -142,7 +167,7 @@ export function SplitEditor({ splitId }: { splitId: string }) {
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="¿Borrar split?"
+        title="¿Borrar rutina?"
         description={`Se va a borrar "${split.name}" y todo su contenido.`}
         onConfirm={onConfirmDelete}
         isPending={deleteSplit.isPending}

@@ -1,18 +1,15 @@
 "use client"
 
 import { useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import type { z } from "zod"
 
-import { exerciseSchema, type ExerciseValues } from "@/lib/schemas"
-import { useCreateExercise, useUpdateExercise } from "@/hooks/use-exercises"
-import type { DayExercise, DayExercisePayload } from "@/types/api"
+import { Eyebrow } from "@/components/typography/eyebrow"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -23,11 +20,17 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { useCreateExercise, useUpdateExercise } from "@/hooks/use-exercises"
+import { exerciseSchema, type ExerciseValues } from "@/lib/schemas"
+import type { DayExercise, DayExercisePayload } from "@/types/api"
 
 interface ExerciseFormDialogProps {
   open: boolean
@@ -36,6 +39,43 @@ interface ExerciseFormDialogProps {
   dayId: string
   exercise?: DayExercise
   defaultOrder: number
+}
+
+/** Campo numérico corto de los objetivos; "" es "sin pautar", no cero. */
+function NumField({
+  control,
+  name,
+  label,
+  placeholder = "—",
+}: {
+  control: ReturnType<typeof useForm<z.input<typeof exerciseSchema>, unknown, ExerciseValues>>["control"]
+  name: keyof z.input<typeof exerciseSchema>
+  label: string
+  placeholder?: string
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-[11px] text-muted-foreground">
+            {label}
+          </FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder={placeholder}
+              {...field}
+              value={(field.value as string | number | undefined) ?? ""}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
 }
 
 export function ExerciseFormDialog({
@@ -51,19 +91,22 @@ export function ExerciseFormDialog({
   const update = useUpdateExercise(splitId)
   const isPending = create.isPending || update.isPending
 
-  const form = useForm<z.input<typeof exerciseSchema>, unknown, ExerciseValues>(
-    {
-      resolver: zodResolver(exerciseSchema),
-      defaultValues: {
-        name: "",
-        order: defaultOrder,
-        targetSets: 3,
-        targetRestSeconds: "",
-        targetRir: "",
-        notes: "",
-      },
-    }
-  )
+  const form = useForm<z.input<typeof exerciseSchema>, unknown, ExerciseValues>({
+    resolver: zodResolver(exerciseSchema),
+    defaultValues: {
+      name: "",
+      order: defaultOrder,
+      targetSets: 3,
+      targetRestSeconds: "",
+      targetRepsMin: "",
+      targetRepsMax: "",
+      targetRirMin: "",
+      targetRirMax: "",
+      toFailure: false,
+      supersetGroup: "",
+      notes: "",
+    },
+  })
 
   useEffect(() => {
     if (open) {
@@ -72,11 +115,24 @@ export function ExerciseFormDialog({
         order: exercise?.order ?? defaultOrder,
         targetSets: exercise?.targetSets ?? 3,
         targetRestSeconds: exercise?.targetRestSeconds ?? "",
-        targetRir: exercise?.targetRir ?? "",
+        targetRepsMin: exercise?.targetRepsMin ?? "",
+        targetRepsMax: exercise?.targetRepsMax ?? "",
+        targetRirMin: exercise?.targetRirMin ?? "",
+        targetRirMax: exercise?.targetRirMax ?? "",
+        toFailure: exercise?.toFailure ?? false,
+        supersetGroup: exercise?.supersetGroup ?? "",
         notes: exercise?.notes ?? "",
       })
     }
   }, [open, exercise, defaultOrder, form])
+
+  // `useWatch` y no `form.watch()`: el segundo devuelve una función que el
+  // compilador de React no puede memoizar, y saltea la optimización del
+  // componente entero.
+  const [toFailure, rirMin] = useWatch({
+    control: form.control,
+    name: ["toFailure", "targetRirMin"],
+  })
 
   function onSubmit(values: ExerciseValues) {
     const payload: DayExercisePayload = values
@@ -96,12 +152,12 @@ export function ExerciseFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-display text-2xl leading-none uppercase">
             {isEdit ? "Editar ejercicio" : "Nuevo ejercicio"}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
               control={form.control}
               name="name"
@@ -109,88 +165,117 @@ export function ExerciseFormDialog({
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="Press banca" {...field} />
+                    <Input placeholder="Sentadilla con barra" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-3">
+
+            <section className="space-y-3">
+              <Eyebrow as="p" className="text-primary">
+                Objetivos
+              </Eyebrow>
+              <div className="grid grid-cols-2 gap-3">
+                <NumField
+                  control={form.control}
+                  name="targetSets"
+                  label="Series"
+                  placeholder="3"
+                />
+                <NumField
+                  control={form.control}
+                  name="targetRestSeconds"
+                  label="Descanso (seg)"
+                />
+                <NumField
+                  control={form.control}
+                  name="targetRepsMin"
+                  label="Reps mín."
+                />
+                <NumField
+                  control={form.control}
+                  name="targetRepsMax"
+                  label="Reps máx."
+                />
+                <NumField
+                  control={form.control}
+                  name="targetRirMin"
+                  label="RIR mín."
+                />
+                <NumField
+                  control={form.control}
+                  name="targetRirMax"
+                  label="RIR máx."
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="targetSets"
+                name="toFailure"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Series objetivo</FormLabel>
+                  <FormItem className="flex flex-row items-center gap-2.5">
                     <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        {...field}
-                        value={field.value as string | number}
+                      <Checkbox
+                        checked={field.value ?? false}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormLabel className="font-normal">
+                      Llevar al fallo
+                    </FormLabel>
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="order"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Orden</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        {...field}
-                        value={field.value as string | number}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="targetRestSeconds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descanso (seg)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="—"
-                        {...field}
-                        value={(field.value as string | number | undefined) ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="targetRir"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>RIR objetivo</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="—"
-                        {...field}
-                        value={(field.value as string | number | undefined) ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+              {toFailure && (
+                <p className="font-mono text-[11px] text-faint">
+                  Con el fallo marcado, la planilla muestra{" "}
+                  <span className="text-muted-foreground">
+                    {rirMin === "" || rirMin == null ? "F" : `${rirMin}-F`}
+                  </span>{" "}
+                  y el RIR máximo no se usa.
+                </p>
+              )}
+            </section>
+
+            <section className="space-y-3">
+              <Eyebrow as="p" className="text-primary">
+                Posición
+              </Eyebrow>
+              <div className="grid grid-cols-2 gap-3">
+                <NumField
+                  control={form.control}
+                  name="order"
+                  label="Orden"
+                  placeholder="0"
+                />
+                <FormField
+                  control={form.control}
+                  name="supersetGroup"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[11px] text-muted-foreground">
+                        Superserie
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="—"
+                          maxLength={10}
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormDescription>
+                Misma letra en ejercicios consecutivos = van encadenados
+                (04A + 04B).
+              </FormDescription>
+            </section>
+
             <FormField
               control={form.control}
               name="notes"
@@ -208,8 +293,13 @@ export function ExerciseFormDialog({
                 </FormItem>
               )}
             />
+
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="h-10 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase"
+              >
                 {isPending && <Loader2 className="animate-spin" />}
                 Guardar
               </Button>

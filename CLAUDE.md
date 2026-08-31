@@ -14,8 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run dev` — dev server on **port 3002** (`http://localhost:3002`)
 - `npm run build` / `npm run start` — production build / serve (also 3002)
 - `npm run lint` — ESLint (flat config; the command is plain `eslint`, not `next lint`)
+- `npm test` — Vitest, single run (`npm run test:watch` to watch)
 
-There is no test runner configured.
+Tests cover the **pure modules only** (`lib/*.test.ts`): the translation between what the API stores and what the planilla shows. That is what breaks silently. There are no component tests, and `vitest.config.mts` restricts collection to `lib/`, so adding one means widening `include` on purpose.
 
 ## Environment
 
@@ -32,11 +33,11 @@ A mobile-first fitness app (Spanish UI) that consumes an external NestJS REST AP
 
 Every screen now reads from the API; there is no mock data module. What differs is the audience:
 
-1. **Editor** (`app/splits/*`, `components/editor`, `components/splits`). CRUD over the nested model — build a routine and assign it to a client. Trainer-only (the API 403s a client on write). Still on the old plain UI, unlike the rest of the app. Reached from the header link, not from the home dashboard.
+1. **Editor** (`app/splits/*`, `components/editor`, `components/splits`). CRUD over the nested model — build a routine, set its targets, and assign it to a client. Trainer-only (the API 403s a client on write). Reached from the header link, not from the home dashboard. `ExerciseRow` renders targets through `toPlanExercise`, so the editor shows the exact string the trainee will read.
 2. **Trainee flow** (`app/rutina`, `app/rutina/entrenar`, `app/progreso`, `components/routine`, `components/progress`). Reads the same resources through `hooks/use-plan.ts` and renders them in the "planilla" idiom. This is the designed surface; the home dashboard links here.
 3. **Trainer's view of a client** (`app/clientes/[id]`). Reuses the trainee components with `usePlan(clientId)` and `readOnly` — same screens, someone else's data, no way to train from there. Scoping is the backend's job; the frontend only says whose data it wants.
 
-`components/workout` (`/splits/[id]/days/[dayId]/workout`) is the editor-side grid: a debounced spreadsheet for filling in a whole day at once. `/rutina/entrenar` is the phone-side, one-set-at-a-time flow. They overlap on purpose — different postures, same endpoints.
+**There is one training screen: `/rutina/entrenar`.** A second one used to live under the editor (`components/workout`, a debounced grid); it was deleted because it logged sets against the *logged-in* user, so a trainer opening a client's day recorded the sets under their own name. What a trainer needs to see of a client is `/clientes/[id]`.
 
 ### The planilla layer
 

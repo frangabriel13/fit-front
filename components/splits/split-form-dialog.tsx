@@ -95,7 +95,9 @@ export function SplitFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar rutina" : "Nueva rutina"}</DialogTitle>
+          <DialogTitle className="font-display text-2xl leading-none uppercase">
+            {isEdit ? "Editar rutina" : "Nueva rutina"}
+          </DialogTitle>
           <DialogDescription>
             Una rutina con sus microciclos, días y ejercicios.
           </DialogDescription>
