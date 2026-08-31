@@ -22,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -52,7 +53,7 @@ export function DayFormDialog({
 
   const form = useForm<z.input<typeof daySchema>, unknown, DayValues>({
     resolver: zodResolver(daySchema),
-    defaultValues: { name: "", order: defaultOrder },
+    defaultValues: { name: "", order: defaultOrder, focus: "" },
   })
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export function DayFormDialog({
       form.reset({
         name: day?.name ?? "",
         order: day?.order ?? defaultOrder,
+        focus: day?.focus ?? "",
       })
     }
   }, [open, day, defaultOrder, form])
@@ -81,7 +83,9 @@ export function DayFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar día" : "Nuevo día"}</DialogTitle>
+          <DialogTitle className="font-display text-2xl leading-none uppercase">
+            {isEdit ? "Editar día" : "Nuevo día"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -94,6 +98,27 @@ export function DayFormDialog({
                   <FormControl>
                     <Input placeholder="Día A · Pecho/Tríceps" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="focus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Foco</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Glúteo · Cuádriceps"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Los grupos que se trabajan. Aparece debajo del nombre del
+                    día en la planilla.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

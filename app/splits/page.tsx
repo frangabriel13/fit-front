@@ -11,7 +11,7 @@ export default function SplitsPage() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 p-4">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 lg:px-6 lg:py-10">
         <SplitsGrid />
       </main>
     </>

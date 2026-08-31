@@ -70,9 +70,9 @@ export function MicrocycleFormDialog({
   }, [open, microcycle, defaultOrder, form])
 
   function onSubmit(values: MicrocycleValues) {
-    const onError = () => toast.error("No se pudo guardar el microciclo.")
+    const onError = () => toast.error("No se pudo guardar la semana.")
     const onSuccess = () => {
-      toast.success(isEdit ? "Microciclo actualizado" : "Microciclo creado")
+      toast.success(isEdit ? "Semana actualizada" : "Semana creada")
       onOpenChange(false)
     }
     if (isEdit) {
@@ -86,8 +86,8 @@ export function MicrocycleFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Editar microciclo" : "Nuevo microciclo"}
+          <DialogTitle className="font-display text-2xl leading-none uppercase">
+            {isEdit ? "Editar semana" : "Nueva semana"}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>

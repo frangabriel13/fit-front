@@ -1,26 +1,28 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, Trash2, Plus } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Microcycle } from "@/types/api"
-import { useDeleteMicrocycle } from "@/hooks/use-microcycles"
-import { Button } from "@/components/ui/button"
-import { Accordion } from "@/components/ui/accordion"
+import { DayFormDialog } from "@/components/editor/day-form-dialog"
 import { DaySection } from "@/components/editor/day-section"
 import { MicrocycleFormDialog } from "@/components/editor/microcycle-form-dialog"
-import { DayFormDialog } from "@/components/editor/day-form-dialog"
 import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
+import { Eyebrow } from "@/components/typography/eyebrow"
+import { Accordion } from "@/components/ui/accordion"
+import { useDeleteMicrocycle } from "@/hooks/use-microcycles"
+import type { Microcycle } from "@/types/api"
 
 interface MicrocycleSectionProps {
   splitId: string
   microcycle: Microcycle
+  index?: number
 }
 
 export function MicrocycleSection({
   splitId,
   microcycle,
+  index = 0,
 }: MicrocycleSectionProps) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -34,44 +36,52 @@ export function MicrocycleSection({
   function onConfirmDelete() {
     deleteMicrocycle.mutate(microcycle.id, {
       onSuccess: () => {
-        toast.success("Microciclo borrado")
+        toast.success("Semana borrada")
         setDeleteOpen(false)
       },
-      onError: () => toast.error("No se pudo borrar el microciclo."),
+      onError: () => toast.error("No se pudo borrar la semana."),
     })
   }
 
   return (
-    <div className="rounded-lg border">
-      <div className="flex items-center gap-1 px-2">
-        <h2 className="flex-1 truncate py-3 font-semibold">
-          {microcycle.name}
-        </h2>
-        <Button
-          variant="ghost"
-          size="icon"
+    <div
+      style={{ "--delay": `${index * 60}ms` } as React.CSSProperties}
+      className="fade-up overflow-hidden rounded-2xl border border-hairline bg-surface"
+    >
+      <div className="flex items-center gap-1 px-4 py-3.5">
+        <div className="min-w-0 flex-1">
+          <Eyebrow as="p" size="sm" tone="meta" className="text-faint">
+            Semana {String(microcycle.order).padStart(2, "0")}
+          </Eyebrow>
+          <h2 className="mt-1 truncate font-display text-lg leading-none uppercase">
+            {microcycle.name}
+          </h2>
+        </div>
+        <button
+          type="button"
           onClick={() => setEditOpen(true)}
-          aria-label="Editar microciclo"
+          aria-label="Editar semana"
+          className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
         >
           <Pencil className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
+        </button>
+        <button
+          type="button"
           onClick={() => setDeleteOpen(true)}
-          aria-label="Borrar microciclo"
+          aria-label="Borrar semana"
+          className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-destructive"
         >
           <Trash2 className="size-4" />
-        </Button>
+        </button>
       </div>
 
-      <div className="border-t px-2 pb-3">
+      <div className="border-t border-hairline px-4 pt-1 pb-4">
         {days.length === 0 ? (
-          <p className="py-3 text-sm text-muted-foreground">
+          <p className="py-3 text-[13px] text-muted-foreground">
             Sin días todavía.
           </p>
         ) : (
-          <Accordion type="multiple" className="divide-y">
+          <Accordion type="multiple" className="divide-y divide-hairline">
             {days.map((day) => (
               <DaySection
                 key={day.id}
@@ -83,15 +93,14 @@ export function MicrocycleSection({
           </Accordion>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3 w-full"
+        <button
+          type="button"
           onClick={() => setAddDayOpen(true)}
+          className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-hairline py-3 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase transition-colors hover:border-edge hover:text-foreground"
         >
-          <Plus className="size-4" />
+          <Plus className="size-3.5" />
           Agregar día
-        </Button>
+        </button>
       </div>
 
       <MicrocycleFormDialog
@@ -111,7 +120,7 @@ export function MicrocycleSection({
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="¿Borrar microciclo?"
+        title="¿Borrar semana?"
         description={`Se va a borrar "${microcycle.name}" con sus días y ejercicios.`}
         onConfirm={onConfirmDelete}
         isPending={deleteMicrocycle.isPending}
