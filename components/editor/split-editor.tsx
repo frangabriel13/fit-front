@@ -14,7 +14,9 @@ import { SplitFormDialog } from "@/components/splits/split-form-dialog"
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useReorder } from "@/hooks/use-reorder"
 import { useDeleteSplit, useSplit } from "@/hooks/use-splits"
+import { reorder } from "@/lib/reorder"
 
 /** Botón de acción secundaria del editor: ícono suelto, sin peso visual. */
 function IconAction({
@@ -46,6 +48,7 @@ export function SplitEditor({ splitId }: { splitId: string }) {
   const router = useRouter()
   const { data: split, isLoading, isError, refetch } = useSplit(splitId)
   const deleteSplit = useDeleteSplit()
+  const reorderMicrocycles = useReorder(splitId, "microcycles")
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addMicroOpen, setAddMicroOpen] = useState(false)
@@ -80,6 +83,11 @@ export function SplitEditor({ splitId }: { splitId: string }) {
   )
   const nextOrder =
     microcycles.length > 0 ? Math.max(...microcycles.map((m) => m.order)) + 1 : 0
+
+  function moveMicrocycle(i: number, dir: -1 | 1) {
+    const { patches } = reorder(microcycles, i, dir)
+    if (patches.length > 0) reorderMicrocycles.mutate(patches)
+  }
 
   function onConfirmDelete() {
     deleteSplit.mutate(splitId, {
@@ -139,6 +147,9 @@ export function SplitEditor({ splitId }: { splitId: string }) {
               splitId={splitId}
               microcycle={microcycle}
               index={i}
+              canUp={i > 0}
+              canDown={i < microcycles.length - 1}
+              onMove={(dir) => moveMicrocycle(i, dir)}
             />
           ))}
         </div>

@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { DayFormDialog } from "@/components/editor/day-form-dialog"
 import { ExerciseFormDialog } from "@/components/editor/exercise-form-dialog"
 import { ExerciseRow } from "@/components/editor/exercise-row"
+import { ReorderButtons } from "@/components/editor/reorder-buttons"
 import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
 import { Eyebrow } from "@/components/typography/eyebrow"
 import {
@@ -15,23 +16,47 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { useDeleteDay } from "@/hooks/use-days"
+import { useReorder } from "@/hooks/use-reorder"
+import { toPlanExercise } from "@/lib/plan"
+import { reorder } from "@/lib/reorder"
+import { toSheetItems } from "@/lib/sheet"
 import type { Day } from "@/types/api"
 
 interface DaySectionProps {
   splitId: string
   microcycleId: string
   day: Day
+  canUp: boolean
+  canDown: boolean
+  onMove: (dir: -1 | 1) => void
 }
 
-export function DaySection({ splitId, microcycleId, day }: DaySectionProps) {
+export function DaySection({
+  splitId,
+  microcycleId,
+  day,
+  canUp,
+  canDown,
+  onMove,
+}: DaySectionProps) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addExerciseOpen, setAddExerciseOpen] = useState(false)
   const deleteDay = useDeleteDay(splitId)
+  const reorderExercises = useReorder(splitId, "exercises")
 
   const exercises = [...(day.exercises ?? [])].sort((a, b) => a.order - b.order)
   const nextOrder =
     exercises.length > 0 ? Math.max(...exercises.map((e) => e.order)) + 1 : 0
+
+  // La numeración de planilla, la misma que va a ver quien entrene. Va en
+  // paralelo a `exercises` porque `toSheetItems` respeta el orden que recibe.
+  const items = toSheetItems(exercises.map(toPlanExercise))
+
+  function moveExercise(index: number, dir: -1 | 1) {
+    const { patches } = reorder(exercises, index, dir)
+    if (patches.length > 0) reorderExercises.mutate(patches)
+  }
 
   function onConfirmDelete() {
     deleteDay.mutate(day.id, {
@@ -63,6 +88,12 @@ export function DaySection({ splitId, microcycleId, day }: DaySectionProps) {
             </span>
           </span>
         </AccordionTrigger>
+        <ReorderButtons
+          label="día"
+          canUp={canUp}
+          canDown={canDown}
+          onMove={onMove}
+        />
         <button
           type="button"
           onClick={() => setEditOpen(true)}
@@ -88,12 +119,17 @@ export function DaySection({ splitId, microcycleId, day }: DaySectionProps) {
               Sin ejercicios todavía.
             </p>
           ) : (
-            exercises.map((exercise) => (
+            exercises.map((exercise, i) => (
               <ExerciseRow
                 key={exercise.id}
                 splitId={splitId}
                 dayId={day.id}
                 exercise={exercise}
+                num={items[i].num}
+                letter={items[i].letter}
+                canUp={i > 0}
+                canDown={i < exercises.length - 1}
+                onMove={(dir) => moveExercise(i, dir)}
               />
             ))
           )}

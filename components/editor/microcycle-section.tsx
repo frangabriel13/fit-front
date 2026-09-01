@@ -7,31 +7,46 @@ import { toast } from "sonner"
 import { DayFormDialog } from "@/components/editor/day-form-dialog"
 import { DaySection } from "@/components/editor/day-section"
 import { MicrocycleFormDialog } from "@/components/editor/microcycle-form-dialog"
+import { ReorderButtons } from "@/components/editor/reorder-buttons"
 import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Accordion } from "@/components/ui/accordion"
 import { useDeleteMicrocycle } from "@/hooks/use-microcycles"
+import { useReorder } from "@/hooks/use-reorder"
+import { reorder } from "@/lib/reorder"
 import type { Microcycle } from "@/types/api"
 
 interface MicrocycleSectionProps {
   splitId: string
   microcycle: Microcycle
   index?: number
+  canUp: boolean
+  canDown: boolean
+  onMove: (dir: -1 | 1) => void
 }
 
 export function MicrocycleSection({
   splitId,
   microcycle,
   index = 0,
+  canUp,
+  canDown,
+  onMove,
 }: MicrocycleSectionProps) {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addDayOpen, setAddDayOpen] = useState(false)
   const deleteMicrocycle = useDeleteMicrocycle(splitId)
+  const reorderDays = useReorder(splitId, "days")
 
   const days = [...(microcycle.days ?? [])].sort((a, b) => a.order - b.order)
   const nextOrder =
     days.length > 0 ? Math.max(...days.map((d) => d.order)) + 1 : 0
+
+  function moveDay(i: number, dir: -1 | 1) {
+    const { patches } = reorder(days, i, dir)
+    if (patches.length > 0) reorderDays.mutate(patches)
+  }
 
   function onConfirmDelete() {
     deleteMicrocycle.mutate(microcycle.id, {
@@ -57,6 +72,12 @@ export function MicrocycleSection({
             {microcycle.name}
           </h2>
         </div>
+        <ReorderButtons
+          label="semana"
+          canUp={canUp}
+          canDown={canDown}
+          onMove={onMove}
+        />
         <button
           type="button"
           onClick={() => setEditOpen(true)}
@@ -82,12 +103,15 @@ export function MicrocycleSection({
           </p>
         ) : (
           <Accordion type="multiple" className="divide-y divide-hairline">
-            {days.map((day) => (
+            {days.map((day, i) => (
               <DaySection
                 key={day.id}
                 splitId={splitId}
                 microcycleId={microcycle.id}
                 day={day}
+                canUp={i > 0}
+                canDown={i < days.length - 1}
+                onMove={(dir) => moveDay(i, dir)}
               />
             ))}
           </Accordion>
