@@ -298,9 +298,27 @@ decidir cuál de las dos respuestas es la correcta y alinear la otra.
 alguna vez un entrenador tiene que cargar series por su cliente, hace falta
 definir quién queda como autor de la sesión.
 
-**Varias rutinas asignadas.** `hooks/use-plan.ts` toma la **primera** de
-`GET /splits`. Si un usuario puede tener más de una activa a la vez, hace falta
-un selector — y probablemente una marca de "activa" en el modelo.
+**Una sola rutina por usuario — decidido, falta que lo garantice la API.**
+La regla del producto es que un usuario tiene **una** rutina asignada a la vez,
+así que `hooks/use-plan.ts` toma la primera de `GET /splits` y con eso alcanza.
+Lo que falta es del lado del backend: hoy nada impide asignarle una segunda a
+alguien que ya tiene una, y esa segunda quedaría **invisible** en la app. Sería
+sano que `POST /splits` / `PATCH /splits/:id` con un `clientId` ya ocupado
+falle, o que desasigne la anterior de forma explícita.
+
+**No hay forma de cerrar una sesión.** `WorkoutSession` no tiene `completedAt`
+ni equivalente, y no existe `PATCH /sessions/:id`. Una sesión nace al empezar a
+entrenar y queda abierta para siempre. Hoy la app lo esquiva —"Terminar el día"
+solo vuelve a `/rutina`— pero sin esto no se puede:
+
+- distinguir "entrenó y terminó" de "abrió la pantalla y se fue";
+- saber si las series de hoy son definitivas (el chip de tendencia de
+  `ProgressionRail` compara contra lo levantado **hasta ahora**, así que a mitad
+  de sesión, con solo la entrada en calor cargada, puede mostrar una caída).
+
+**`GET /clients` es de solo lectura.** Un entrenador no puede dar de alta a un
+cliente desde la app: no hay `POST /clients` ni invitación. Hoy los clientes
+salen de la seed.
 
 **`SplitDto` no dice a quién está asignada la rutina.** El editor ya puede
 asignar (`POST /splits` y `PATCH /splits/:id` con `clientId`), pero no puede

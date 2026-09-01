@@ -46,6 +46,7 @@ The API stores numbers; the screens speak abbreviations. Three pure modules do t
 - `lib/plan.ts` — `DayExercise` → `PlanExercise`: rep/RIR ranges, `toFailure`, rest seconds → `"8-10"`, `"0-F"`, `"2'30''"`, plus `supersetGroup` → `superset`. Also `microcycleForWeek()`, which is how "the current week" becomes a set of days.
 - `lib/sheet.ts` — numbering: one block per exercise, supersets share a number with an A/B suffix.
 - `lib/set-logs.ts` — `SetLog` (two booleans) → `SetEntry` (one status: done / skipped / pending), and back.
+- `lib/progression.ts` — the `/progreso` chart's math: one node per week valued in estimated 1RM, bar heights scaled from a baseline at half the max, and the gain/trend chip. `ProgressionRail` only draws.
 
 Nothing above these modules should format a rep range or read `completed`/`skipped` directly.
 

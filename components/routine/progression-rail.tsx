@@ -1,13 +1,17 @@
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
-import { topE1RM, type SetEntry } from "@/lib/training-math"
+import { progression, type Trend } from "@/lib/progression"
+import type { SetEntry } from "@/lib/training-math"
 import { cn } from "@/lib/utils"
 import type { ExerciseHistory } from "@/types/api"
 
-/** Progresión del macrociclo: un nodo por semana, medido en 1RM estimado. */
-
-type Trend = "up" | "flat" | "down"
+/**
+ * Progresión del macrociclo: un nodo por semana, medido en 1RM estimado.
+ *
+ * Acá solo se dibuja. Cuánto vale cada semana, cuánto mide cada barra y si la
+ * tendencia sube o baja lo resuelve `lib/progression.ts`.
+ */
 
 /**
  * La nota al pie del gráfico. Las tres caras comparten forma, así que viven en
@@ -58,36 +62,9 @@ export function ProgressionRail({
   /** Series de hoy, si el ejercicio se está entrenando ahora. */
   today?: SetEntry[]
 }) {
-  const weeks = history?.weeks ?? []
-  const todayDone = (today ?? []).filter((s) => s.status === "done")
-  const todayTop = todayDone.length ? topE1RM(todayDone) : null
-
-  if (weeks.length === 0 && todayTop == null) return null
-
-  // Un nodo por semana del macrociclo. El valor es el 1RM estimado (e1RM):
-  // combina peso y reps, así "mismo peso, más reps" también sube la barra.
-  const nodes = Array.from({ length: totalWeeks }, (_, i) => {
-    const n = i + 1
-    const past = weeks[i]
-    const isToday = n === week
-    return { week: n, value: past ? topE1RM(past) : isToday ? todayTop : null, today: isToday }
-  })
-
-  const values = nodes.map((n) => n.value).filter((v): v is number => v != null)
-  const max = values.length ? Math.max(...values) : 0
-  // Línea base a la mitad del máximo: una progresión real trepa, pero las
-  // mesetas quedan parejas en vez de exagerar el ruido semana a semana.
-  const heightPct = (v: number) => {
-    if (max <= 0) return 70
-    const baseline = max * 0.5
-    return Math.max(12, Math.min(100, ((v - baseline) / (max - baseline)) * 100))
-  }
-
-  const base = values[0] ?? null
-  const ref = todayTop ?? topE1RM(weeks.at(-1) ?? [])
-  const gain = ref != null && base != null ? Math.round(ref - base) : null
-  const trend: Trend | null =
-    gain == null ? null : gain >= 1 ? "up" : gain <= -1 ? "down" : "flat"
+  const chart = progression(history, week, totalWeeks, today)
+  if (!chart) return null
+  const { nodes, gain, trend } = chart
 
   return (
     <section>
@@ -129,9 +106,12 @@ export function ProgressionRail({
                   !n.today && n.value == null && "bg-hairline"
                 )}
                 style={{
+                  // Sin valor la barra es un placeholder: apenas una marca, un
+                  // poco más alta en la semana en curso porque todavía puede
+                  // llenarse hoy.
                   height:
-                    n.value != null
-                      ? `${heightPct(n.value)}%`
+                    n.heightPct != null
+                      ? `${n.heightPct}%`
                       : n.today
                         ? "34%"
                         : "14%",
