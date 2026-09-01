@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` — ESLint (flat config; the command is plain `eslint`, not `next lint`)
 - `npm test` — Vitest, single run (`npm run test:watch` to watch)
 
-Tests cover the **pure modules only** (`lib/*.test.ts`): the translation between what the API stores and what the planilla shows. That is what breaks silently. There are no component tests, and `vitest.config.mts` restricts collection to `lib/`, so adding one means widening `include` on purpose.
+Tests cover the **pure modules only**: the translation between what the API stores and what the planilla shows. That is what breaks silently. Most live in `lib/`, but two sit next to the components that consume them (`components/routine/entrenar/slots.ts`, `components/routine/sheet/set-delta.ts`), so `vitest.config.mts` collects `{lib,components}/**/*.test.ts` — by filename, not by folder. There are no component tests: rendering React would mean adding jsdom and a testing library, and none of the bugs so far lived there.
 
 ## Environment
 
@@ -53,7 +53,7 @@ Nothing above these modules should format a rep range or read `completed`/`skipp
 
 - `lib/api.ts` — single axios instance. Request interceptor attaches `Authorization: Bearer <token>`; response interceptor on `401` clears the token and hard-redirects to `/login`. `unwrap<T>()` strips `response.data` with typing.
 - `hooks/use-*.ts` — one hook module per resource (`use-splits`, `use-microcycles`, `use-days`, `use-exercises`, `use-sessions`, `use-progress`, `use-auth`). All `"use client"`. Mutations invalidate via the centralized key factory in `lib/query-keys.ts`. `use-sessions` does **optimistic** batch upserts (`PUT /sessions/:id/set-logs`) keyed by `dayExerciseId:setNumber`; optimistic rows carry a fake id (`OPTIMISTIC_ID_PREFIX`) that must never reach a `DELETE`.
-- `hooks/use-plan.ts` — `usePlan(userId?)`, the composite the trainee screens use: splits → detail → progress, resolved to the current week's `PlanDay[]` plus history by exercise name. Takes the **first** split (no multi-routine selector yet). The API names the same filter `clientId` on `/splits` and `userId` elsewhere; this hook hides that.
+- `hooks/use-plan.ts` — `usePlan(userId?)`, the composite the trainee screens use: splits → detail → progress, resolved to the current week's `PlanDay[]` plus history by exercise name. Takes the **first** split, which is enough: a user has exactly one assigned routine (product rule). The API names the same filter `clientId` on `/splits` and `userId` elsewhere; this hook hides that.
 - `hooks/use-active-session.ts` — `useTodaysSession` reads today's session; `useActiveSession` creates one if missing. Viewing a routine must not open a session, so `/rutina` uses the read-only one and only `/rutina/entrenar` uses the creating one.
 - `types/api.ts` — hand-maintained mirror of the API contract. `lib/schemas.ts` — zod v4 form schemas (used with react-hook-form via `@hookform/resolvers`); empty strings coerce to `undefined` for optional numeric/text inputs.
 

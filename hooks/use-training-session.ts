@@ -190,12 +190,33 @@ export function useTrainingSession({
   const drop = useCallback(
     (roundIndexes: number[]) => {
       if (!sessionId) return
+      const ids: string[] = []
       for (const round of roundIndexes) {
         for (const it of members) {
           const id = findSetLogId(session, it.ex.id, round + 1)
-          if (id) deleteSetLog.mutate(id)
+          if (id) ids.push(id)
         }
       }
+      if (ids.length === 0) return
+
+      // Avisar si falla importa más acá que en el resto de la pantalla: la
+      // grilla ya se vació en local y NO se vuelve a sembrar desde la sesión
+      // (ver `seededRef`), así que un DELETE que falla deja la serie viva en el
+      // servidor sin que nada en pantalla lo delate.
+      //
+      // `mutateAsync` y no `mutate` con `onError`: reiniciar una biserie —o el
+      // ejercicio entero— dispara varios DELETE del MISMO hook, y el observer
+      // de TanStack solo conserva los callbacks del último `mutate`, así que el
+      // fallo de cualquiera de los anteriores no avisaría nada. La promesa sí
+      // llega siempre. El rollback de la caché vive en el hook y corre igual.
+      //
+      // Un aviso por reinicio y no uno por serie: si falla, falla por lo mismo.
+      void Promise.allSettled(ids.map((id) => deleteSetLog.mutateAsync(id))).then(
+        (results) => {
+          if (results.some((r) => r.status === "rejected"))
+            toast.error("No se pudo reiniciar.")
+        }
+      )
     },
     [sessionId, members, session, deleteSetLog]
   )
