@@ -18,8 +18,10 @@ import type { ExerciseHistory, Split } from "@/types/api"
  * y no tengan que saber que un macrociclo son microciclos y que la semana de
  * hoy la decide el progreso.
  *
- * De momento se toma la PRIMERA rutina de la lista. Cuando un usuario pueda
- * tener varias asignadas a la vez, acá es donde entra el selector.
+ * Se toma la PRIMERA rutina de la lista, y con eso alcanza: por regla del
+ * producto un usuario tiene UNA sola rutina asignada a la vez. La API igual
+ * devuelve una lista; si alguna vez trajera dos, esta pantalla mostraría una y
+ * en silencio, así que el día que la regla cambie, acá entra el selector.
  *
  * OJO con el nombre del parámetro: la API lo llama `clientId` en `/splits` y
  * `userId` en progreso y sesiones. Es la misma persona.
