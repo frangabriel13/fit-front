@@ -238,41 +238,37 @@ export function ExerciseFormDialog({
               )}
             </section>
 
+            {/* La POSICIÓN no se escribe acá: se mueve con las flechas de la
+                fila. Un número a mano convivía mal con eso —podía repetirse o
+                contradecir lo que se ve— y ya no hace falta. */}
             <section className="space-y-3">
               <Eyebrow as="p" className="text-primary">
-                Posición
+                Superserie
               </Eyebrow>
-              <div className="grid grid-cols-2 gap-3">
-                <NumField
-                  control={form.control}
-                  name="order"
-                  label="Orden"
-                  placeholder="0"
-                />
-                <FormField
-                  control={form.control}
-                  name="supersetGroup"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-[11px] text-muted-foreground">
-                        Superserie
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="—"
-                          maxLength={10}
-                          {...field}
-                          value={field.value ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="supersetGroup"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[11px] text-muted-foreground">
+                      Grupo
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="—"
+                        maxLength={10}
+                        {...field}
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormDescription>
                 Misma letra en ejercicios consecutivos = van encadenados
-                (04A + 04B).
+                (04A + 04B). Si quedan separados no se encadenan: acomodalos con
+                las flechas.
               </FormDescription>
             </section>
 
