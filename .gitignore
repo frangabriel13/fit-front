@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Metadatos que WSL escribe al copiar archivos desde Windows.
+*:Zone.Identifier

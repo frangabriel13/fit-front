@@ -70,6 +70,12 @@ export const splitSchema = z.object({
 })
 export type SplitValues = z.infer<typeof splitSchema>
 
+/** Asignar una rutina existente a un cliente: solo hace falta cuál. */
+export const assignSplitSchema = z.object({
+  splitId: z.string().min(1, "Elegí una rutina"),
+})
+export type AssignSplitValues = z.infer<typeof assignSplitSchema>
+
 export const microcycleSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(100),
   order: z.coerce.number().int().min(0),

@@ -29,10 +29,7 @@ aparecieron hasta ahora vivía ahí.
 ## Entorno
 
 - `NEXT_PUBLIC_API_URL` — URL base de la API REST externa (NestJS), sin barra
-  final (por ejemplo `http://localhost:3000`).
-- `NEXT_PUBLIC_USE_MOCKS` — con `"true"` se intercepta el adapter de axios para
-  falsear `/auth/*` y que la app corra sin backend. **Temporal**; ver "Capa de
-  mocks" más abajo.
+  final. En desarrollo, `http://localhost:3003`. Es la única variable que hay.
 
 La API tiene que permitir CORS desde el origen del front y aceptar el header
 `Authorization`.
@@ -158,12 +155,10 @@ el JWT de verdad es trabajo de la API (responde 401). Después del login,
 `use-auth` hace un `window.location.assign("/")` duro (no `router.replace`) para
 que el proxy vea la cookie recién puesta.
 
-### Capa de mocks (temporal)
+### Documentación del contrato
 
-`lib/mocks/auth-mock.ts` se instala en `lib/api.ts` solo cuando
-`NEXT_PUBLIC_USE_MOCKS=true`. Falsea `/auth/login` y `/auth/me` con usuarios
-hardcodeados y delega todo lo demás al adapter real — una salida de emergencia
-para trabajar sin backend. En desarrollo normal la bandera está en `false`.
+No queda nada mockeado: `lib/mocks/` y `NEXT_PUBLIC_USE_MOCKS` se borraron al
+cerrar la migración, así que la app no arranca sin la API.
 
 `docs/API-CONTRACT.md` es la especificación compartida con el repo del backend,
 incluidos los temas abiertos (alcance de las sesiones entre entrenador y

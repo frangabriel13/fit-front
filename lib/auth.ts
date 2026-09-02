@@ -28,7 +28,3 @@ export function clearToken(): void {
   if (typeof document === "undefined") return
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax`
 }
-
-export function isAuthenticated(): boolean {
-  return getToken() !== null
-}

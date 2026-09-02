@@ -53,6 +53,31 @@ export function useUpdateSplit() {
   })
 }
 
+/**
+ * Asigna una rutina que YA existe a un cliente (`PATCH /splits/:id {clientId}`).
+ *
+ * Aparte de `useUpdateSplit` porque acá no se manda el nombre: el PATCH es
+ * parcial, y `SplitPayload` obliga a mandarlo. Reenviarlo para asignar sería
+ * arriesgarse a pisar el nombre con lo que tenga la caché.
+ *
+ * Mandar `clientId` ASIGNA y nunca desasigna: la API no tiene camino inverso.
+ * Por eso esto solo se ofrece cuando el cliente no tiene ninguna — asignarle
+ * una segunda taparía la primera sin forma de deshacerlo.
+ */
+export function useAssignSplit() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, clientId }: { id: string; clientId: string }) =>
+      unwrap<Split>(api.patch(`/splits/${id}`, { clientId })),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["splits"] })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.splits.detail(variables.id),
+      })
+    },
+  })
+}
+
 export function useDeleteSplit() {
   const queryClient = useQueryClient()
   return useMutation({

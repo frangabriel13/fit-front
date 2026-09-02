@@ -154,6 +154,11 @@ export interface SetLogUpsert {
   skipped?: boolean
 }
 
+/**
+ * Body de `PATCH /set-logs/:id`. Sin consumidor hoy —todo lo que se edita en la
+ * planilla va por el upsert en lote—, pero el endpoint existe y esto es el
+ * espejo del contrato, no de lo que la app usa.
+ */
 export interface SetLogPatch {
   actualReps?: number
   actualRir?: number

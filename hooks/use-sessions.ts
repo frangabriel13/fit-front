@@ -5,21 +5,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api, unwrap } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { OPTIMISTIC_ID_PREFIX } from "@/lib/set-logs"
-import type {
-  SetLog,
-  SetLogPatch,
-  SetLogUpsert,
-  WorkoutSession,
-} from "@/types/api"
+import type { SetLog, SetLogUpsert, WorkoutSession } from "@/types/api"
 
-/** Con `userId`, las sesiones de ese cliente; sin él, las propias. */
+/**
+ * La ÚLTIMA sesión de un día. Con `userId`, la de ese cliente; sin él, la propia.
+ *
+ * `?limit=1` y no la lista entera: el endpoint devuelve todas las sesiones de
+ * ese día desde siempre, cada una con sus setLogs completos, y lo único que se
+ * pregunta acá es si la más reciente es de hoy. Ordena por `performedAt` desc,
+ * así que la primera alcanza — y si esa no es de hoy, ninguna lo es. Sin el
+ * tope, un día entrenado una vez por semana durante un año son ~52 sesiones
+ * completas viajando en cada cambio de pestaña.
+ */
 export function useSessions(dayId: string, userId?: string) {
   return useQuery({
     queryKey: queryKeys.sessions.byDay(dayId, userId),
     queryFn: () =>
       unwrap<WorkoutSession[]>(
         api.get(`/days/${dayId}/sessions`, {
-          params: userId ? { userId } : undefined,
+          params: { limit: 1, ...(userId ? { userId } : {}) },
         })
       ),
     enabled: !!dayId,
@@ -104,20 +108,6 @@ export function useSaveSetLogs(sessionId: string, dayId: string) {
       queryClient.invalidateQueries({ queryKey: detailKey })
       queryClient.invalidateQueries({
         queryKey: queryKeys.sessions.byDay(dayId),
-      })
-    },
-  })
-}
-
-// Edición puntual de un set-log existente (PATCH /set-logs/:id).
-export function useUpdateSetLog(sessionId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, ...patch }: SetLogPatch & { id: string }) =>
-      unwrap<SetLog>(api.patch(`/set-logs/${id}`, patch)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.sessions.detail(sessionId),
       })
     },
   })
