@@ -85,6 +85,23 @@ export interface LoginPayload {
   password: string
 }
 
+/**
+ * Alta de un cliente por su entrenador (`POST /clients`).
+ *
+ * Sin `role` ni `trainerId`: los pone el servidor. La contraseña es provisoria
+ * — el cliente la cambia después con `POST /auth/change-password`.
+ */
+export interface ClientPayload {
+  email: string
+  name: string
+  password: string
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface SplitPayload {
   name: string
   description?: string

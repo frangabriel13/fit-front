@@ -43,7 +43,7 @@ App de gimnasio pensada primero para el celular (UI en castellano) que consume
 una API REST externa de NestJS. El estado de servidor vive en TanStack Query; no
 hay store de cliente a nivel app.
 
-### Dos superficies sobre una sola capa de datos
+### Cuatro superficies sobre una sola capa de datos
 
 Todas las pantallas leen de la API; no queda ningún módulo de datos mockeados.
 Lo que cambia es a quién le hablan:
@@ -60,7 +60,12 @@ Lo que cambia es a quién le hablan:
    `app/progreso`, `components/routine`, `components/progress`). Lee los mismos
    recursos a través de `hooks/use-plan.ts` y los muestra en el idioma
    "planilla". Es la superficie diseñada; el home apunta acá.
-3. **La vista del entrenador sobre un cliente** (`app/clientes/[id]`). Reusa los
+3. **Cuenta y cartera** (`components/account`, `components/clients`). Las dos
+   acciones que no son sobre rutinas: dar de alta un cliente (diálogo en
+   `/clientes`, solo `trainer`) y cambiarse la propia contraseña (diálogo desde
+   el menú de cuenta del header, cualquier rol). Son las únicas escrituras que
+   no pasan por el modelo anidado.
+4. **La vista del entrenador sobre un cliente** (`app/clientes/[id]`). Reusa los
    componentes de quien entrena con `usePlan(clientId)` y `readOnly` — las
    mismas pantallas, los datos de otro, sin forma de entrenar desde ahí. Filtrar
    por usuario es trabajo del backend; el frontend solo dice de quién quiere los
@@ -100,9 +105,9 @@ Nada por encima de estos módulos debería formatear un rango de reps ni leer
   y redirige duro a `/login`. `unwrap<T>()` saca `response.data` con tipos.
 - `hooks/use-*.ts` — un módulo de hooks por recurso (`use-splits`,
   `use-microcycles`, `use-days`, `use-exercises`, `use-sessions`, `use-progress`,
-  `use-auth`). Todos `"use client"`. Las mutaciones invalidan con la fábrica
-  centralizada de claves de `lib/query-keys.ts`. `use-sessions` hace upserts por
-  lote **optimistas** (`PUT /sessions/:id/set-logs`) indexados por
+  `use-clients`, `use-auth`). Todos `"use client"`. Las mutaciones invalidan con
+  la fábrica centralizada de claves de `lib/query-keys.ts`. `use-sessions` hace
+  upserts por lote **optimistas** (`PUT /sessions/:id/set-logs`) indexados por
   `dayExerciseId:setNumber`; las filas optimistas llevan un id falso
   (`OPTIMISTIC_ID_PREFIX`) que nunca puede llegar a un `DELETE`.
 - `hooks/use-plan.ts` — `usePlan(userId?)`, el compuesto que usan las pantallas

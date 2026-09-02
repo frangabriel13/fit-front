@@ -22,6 +22,46 @@ export const loginSchema = z.object({
 })
 export type LoginValues = z.infer<typeof loginSchema>
 
+/**
+ * Alta de un cliente. Los límites son los mismos que valida la API
+ * (`CreateClientDto`): repetirlos acá evita un viaje para enterarse.
+ */
+export const clientSchema = z.object({
+  email: z.email("Email inválido").max(200),
+  name: z.string().min(1, "El nombre es obligatorio").max(200),
+  password: z
+    .string()
+    .min(8, "Mínimo 8 caracteres")
+    .max(200, "Máximo 200 caracteres"),
+})
+export type ClientValues = z.infer<typeof clientSchema>
+
+/**
+ * Cambio de contraseña propio.
+ *
+ * La confirmación es solo del front —la API pide `currentPassword` y
+ * `newPassword`— y existe porque el campo va enmascarado: un error de tipeo
+ * dejaría al usuario afuera sin forma de saber qué escribió.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Ingresá tu contraseña actual"),
+    newPassword: z
+      .string()
+      .min(8, "Mínimo 8 caracteres")
+      .max(200, "Máximo 200 caracteres"),
+    confirmPassword: z.string().min(1, "Repetí la contraseña nueva"),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    message: "La nueva tiene que ser distinta de la actual",
+    path: ["newPassword"],
+  })
+export type ChangePasswordValues = z.infer<typeof changePasswordSchema>
+
 export const splitSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(100),
   description: optionalText,

@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation"
 import { api, unwrap } from "@/lib/api"
 import { clearToken, getToken, setToken } from "@/lib/auth"
 import { queryKeys } from "@/lib/query-keys"
-import type { LoginPayload, LoginResponse, User } from "@/types/api"
+import type {
+  ChangePasswordPayload,
+  LoginPayload,
+  LoginResponse,
+  User,
+} from "@/types/api"
 
 export function useMe() {
   return useQuery({
@@ -31,6 +36,24 @@ export function useLogin() {
       // el redirect viejo a /login (que se generó cuando aún no había token).
       window.location.assign("/")
     },
+  })
+}
+
+/**
+ * Cambio de contraseña propio (`POST /auth/change-password`, 204).
+ *
+ * No cierra la sesión: verificado contra la API, el token emitido antes del
+ * cambio sigue siendo válido. Desloguear sería una decisión del front, y acá no
+ * hace falta.
+ *
+ * La contraseña actual equivocada responde **400**, no 401 — importa porque el
+ * interceptor de `lib/api.ts` desloguea ante cualquier 401, y equivocarse al
+ * tipear no puede costar la sesión.
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (payload: ChangePasswordPayload) =>
+      unwrap<void>(api.post("/auth/change-password", payload)),
   })
 }
 
