@@ -316,9 +316,19 @@ solo vuelve a `/rutina`— pero sin esto no se puede:
   `ProgressionRail` compara contra lo levantado **hasta ahora**, así que a mitad
   de sesión, con solo la entrada en calor cargada, puede mostrar una caída).
 
-**`GET /clients` es de solo lectura.** Un entrenador no puede dar de alta a un
-cliente desde la app: no hay `POST /clients` ni invitación. Hoy los clientes
-salen de la seed.
+**No se puede dar de baja un cliente ni cambiarle el email.** El alta funciona
+(`POST /clients` → 201, 409 si el email está repetido) y el front la usa desde
+`/clientes`. Lo que no existe es el camino inverso: no hay `DELETE /clients/:id`
+ni `PATCH`, así que un cliente cargado con el email mal escrito queda así para
+siempre y solo se saca por base. Por eso el diálogo de alta avisa que el email
+no se puede cambiar después.
+
+**La contraseña provisoria la elige el entrenador.** No hay invitación por mail
+ni token de primer ingreso: `POST /clients` pide una contraseña, y el entrenador
+se la tiene que pasar al cliente por fuera de la app. El cliente después la
+cambia con `POST /auth/change-password` (204; con la actual equivocada responde
+**400**, no 401, así que no desloguea, y el token viejo sigue siendo válido
+después del cambio).
 
 **`SplitDto` no dice a quién está asignada la rutina.** El editor ya puede
 asignar (`POST /splits` y `PATCH /splits/:id` con `clientId`), pero no puede
@@ -340,10 +350,16 @@ diálogo de edición.
 
 ## 5. Sobre seguridad, para no arrastrar el atajo del mock
 
-Hoy `proxy.ts` (el middleware de Next) **solo chequea que la cookie exista**, no
-que el token sea válido. Es un atajo del período sin backend. Con la API real,
-la validación tiene que estar del lado del backend en cada request — el
-frontend ya está preparado: cualquier 401 limpia la sesión.
+`proxy.ts` (el middleware de Next) **solo chequea que la cookie exista**, y así
+tiene que quedarse: es un redirect barato para no pintar el shell de la app a
+quien no inició sesión, no una autenticación. La validación real la hace el
+backend en cada request, y el interceptor de `lib/api.ts` limpia la sesión ante
+cualquier 401.
+
+Nada en la app trata la cookie como prueba de identidad: el usuario y su rol
+salen siempre de `GET /auth/me`. Y la cookie dura lo mismo que el JWT (7 días
+las dos), así que no hay ventana en la que un token vencido siga abriendo
+pantallas.
 
 Las credenciales mock de `lib/mocks/auth-mock.ts` son de desarrollo y **no
 deben migrar** a ninguna seed de producción.
