@@ -16,12 +16,10 @@ En `.env.local`:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3003   # base de la API
-NEXT_PUBLIC_USE_MOCKS=false                 # mocks apagados
 ```
 
-Con `false`, `lib/mocks/` no intercepta nada y todas las llamadas salen a
-`NEXT_PUBLIC_API_URL`. La capa de mocks queda solo como implementación de
-referencia de `/auth/*` para trabajar sin backend.
+Es la única variable. Ya no hay capa de mocks: todas las llamadas salen a
+`NEXT_PUBLIC_API_URL` y sin la API levantada la app no funciona.
 
 **CORS:** el frontend corre en `http://localhost:3002`. Habilitar ese origen.
 
@@ -302,8 +300,20 @@ definir quién queda como autor de la sesión.
 La regla del producto es que un usuario tiene **una** rutina asignada a la vez,
 así que `hooks/use-plan.ts` toma la primera de `GET /splits` y con eso alcanza.
 Lo que falta es del lado del backend: hoy nada impide asignarle una segunda a
-alguien que ya tiene una, y esa segunda quedaría **invisible** en la app. Sería
-sano que `POST /splits` / `PATCH /splits/:id` con un `clientId` ya ocupado
+alguien que ya tiene una. Verificado, y es peor que "queda invisible" — la
+segunda **tapa** a la primera:
+
+```
+POST /splits {name:"ZZZ vacia", clientId:<diamela>}   → 201
+GET  /splits?clientId=<diamela>  → ["ZZZ vacia", "Hipertrofia · Mesociclo Inferior"]
+```
+
+`usePlan` toma la primera de la lista, y la lista viene con la más nueva
+adelante. O sea que asignar una rutina vacía a alguien que ya entrenaba le
+vacía la pantalla: su rutina real sigue existiendo pero deja de verse, y no hay
+forma de desasignar la nueva para recuperarla.
+
+Sería sano que `POST /splits` / `PATCH /splits/:id` con un `clientId` ya ocupado
 falle, o que desasigne la anterior de forma explícita.
 
 **No hay forma de cerrar una sesión.** `WorkoutSession` no tiene `completedAt`
@@ -361,5 +371,5 @@ salen siempre de `GET /auth/me`. Y la cookie dura lo mismo que el JWT (7 días
 las dos), así que no hay ventana en la que un token vencido siga abriendo
 pantallas.
 
-Las credenciales mock de `lib/mocks/auth-mock.ts` son de desarrollo y **no
-deben migrar** a ninguna seed de producción.
+Las credenciales de desarrollo viven en la seed del backend y **no deben migrar**
+a producción.

@@ -3,8 +3,14 @@
 Mapa para pasar las pantallas de **datos hardcodeados** a **datos reales de la API**.
 Orden de trabajo: **Login → Inicio → Rutina → Rutina/Entrenar**.
 
-> Este archivo es el tablero. Se va tildando a medida que se completa cada paso.
-> Sirve, además, para comunicarle al backend **qué endpoints y qué campos** tiene que ir construyendo.
+> **La migración está cerrada.** Todas las pantallas leen de la API, `lib/mocks/`
+> y `lib/routine-data.ts` se borraron, y el contrato se verificó endpoint por
+> endpoint contra la API viva. Este archivo queda como registro de cómo se hizo:
+> los casilleros sin tildar son de un tablero que dejó de mantenerse, no trabajo
+> pendiente.
+>
+> **Lo que sigue abierto está en `docs/API-CONTRACT.md`**, sección "Lo que queda
+> abierto". Ese es el documento vivo.
 
 ---
 

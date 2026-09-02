@@ -4,11 +4,13 @@ import Link from "next/link"
 import { useState } from "react"
 import { ArrowLeft, Pencil } from "lucide-react"
 
+import { AssignSplitDialog } from "@/components/clients/assign-split-dialog"
 import { Notice } from "@/components/feedback/notice"
 import { ProgressList } from "@/components/progress/progress-list"
 import { RoutineView } from "@/components/routine/routine-view"
 import { WeekBar } from "@/components/routine/week-bar"
 import { Eyebrow } from "@/components/typography/eyebrow"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMe } from "@/hooks/use-auth"
 import { useClients } from "@/hooks/use-clients"
@@ -37,6 +39,7 @@ function Loading() {
  */
 export function ClientDetail({ clientId }: { clientId: string }) {
   const [tab, setTab] = useState<Tab>("rutina")
+  const [assignOpen, setAssignOpen] = useState(false)
 
   const { data: me, isPending: loadingMe } = useMe()
   const isTrainer = me?.role === "trainer"
@@ -145,8 +148,38 @@ export function ClientDetail({ clientId }: { clientId: string }) {
         <Loading />
       ) : isError ? (
         <Notice>No se pudo cargar la rutina de {client.name}.</Notice>
-      ) : isEmpty || days.length === 0 ? (
-        <Notice>{client.name} todavía no tiene una rutina asignada.</Notice>
+      ) : isEmpty ? (
+        <Notice>
+          <p>{client.name} todavía no tiene una rutina asignada.</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Button
+              onClick={() => setAssignOpen(true)}
+              className="h-10 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase"
+            >
+              Asignar una rutina
+            </Button>
+            <Link
+              href="/splits"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              o armar una nueva
+            </Link>
+          </div>
+        </Notice>
+      ) : days.length === 0 ? (
+        // Distinto de no tener rutina, y hay que decirlo distinto: mandar a
+        // asignar una que ya está asignada es mandar al lugar equivocado.
+        <Notice>
+          La rutina de {client.name} todavía no tiene días cargados.{" "}
+          {split && (
+            <Link
+              href={`/splits/${split.id}`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              Editar {split.name}
+            </Link>
+          )}
+        </Notice>
       ) : tab === "rutina" ? (
         <>
           {split && (
@@ -184,6 +217,13 @@ export function ClientDetail({ clientId }: { clientId: string }) {
           totalWeeks={totalWeeks}
         />
       )}
+
+      <AssignSplitDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        clientId={clientId}
+        clientName={client.name}
+      />
     </>
   )
 }
