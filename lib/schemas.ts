@@ -37,6 +37,24 @@ export const clientSchema = z.object({
 export type ClientValues = z.infer<typeof clientSchema>
 
 /**
+ * Edición de un cliente. Mismos campos que el alta pero la contraseña es
+ * opcional: vacía significa "no la toques". Cargarla es el reset del
+ * entrenador, y deja al cliente teniendo que elegir una nueva.
+ */
+export const clientEditSchema = clientSchema.extend({
+  /**
+   * Vacía = no tocar la contraseña. Sin `transform`: que la entrada y la salida
+   * sean las dos `string` mantiene simple el tipo del formulario, y traducir el
+   * vacío a "no mandar el campo" es trabajo del submit, donde se lee.
+   */
+  password: z
+    .string()
+    .max(200, "Máximo 200 caracteres")
+    .refine((v) => v === "" || v.length >= 8, "Mínimo 8 caracteres"),
+})
+export type ClientEditValues = z.infer<typeof clientEditSchema>
+
+/**
  * Cambio de contraseña propio.
  *
  * La confirmación es solo del front —la API pide `currentPassword` y

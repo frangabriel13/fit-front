@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { AxiosError } from "axios"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -45,14 +46,13 @@ interface AssignSplitDialogProps {
 /**
  * Asignarle al cliente una rutina que el entrenador ya tiene armada.
  *
- * Solo se ofrece cuando el cliente NO tiene ninguna: mandar `clientId` es un
- * upsert que asigna y jamás desasigna, así que una segunda rutina taparía a la
- * primera —`usePlan` toma la primera de la lista— y no habría forma de volver
- * atrás desde la app.
+ * Solo se ofrece cuando el cliente NO tiene ninguna: la API impide que tenga
+ * dos (responde 409), y cambiársela es otro gesto — vive en el diálogo de la
+ * rutina, donde se ve cuál tiene hoy.
  *
- * La lista no filtra las que ya están asignadas a otro: la API no informa las
- * asignaciones, y además reusar una misma plantilla en varios clientes es un
- * uso legítimo.
+ * La lista no filtra las rutinas ya asignadas a otro: el invariante es que un
+ * CLIENTE tiene una sola rutina, no que una rutina tenga un solo cliente, así
+ * que reusar la misma plantilla en varios es válido.
  */
 export function AssignSplitDialog({
   open,
@@ -80,7 +80,18 @@ export function AssignSplitDialog({
           toast.success(`${split.name} asignada a ${clientName}`)
           onOpenChange(false)
         },
-        onError: () => toast.error("No se pudo asignar la rutina."),
+        onError: (error) => {
+          // No debería pasar: este diálogo solo se ofrece cuando el cliente no
+          // tiene rutina. Pero entre que se pintó la pantalla y se apretó el
+          // botón alguien pudo asignarle una desde otro lado.
+          if ((error as AxiosError).response?.status === 409) {
+            toast.error(
+              `${clientName} ya tiene una rutina. Recargá para ver cuál.`
+            )
+            return
+          }
+          toast.error("No se pudo asignar la rutina.")
+        },
       }
     )
   }
@@ -141,7 +152,7 @@ export function AssignSplitDialog({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      No se puede desasignar después: la API no tiene ese camino.
+                      Se le puede sacar después desde el diálogo de la rutina.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

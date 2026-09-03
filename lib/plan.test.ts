@@ -152,6 +152,7 @@ describe("microcycleForWeek", () => {
   const split = (orders: number[]): Split => ({
     id: "s1",
     name: "Macro",
+    clients: [],
     microcycles: orders.map((o) => ({
       id: `m${o}`,
       name: `Semana ${o}`,

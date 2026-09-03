@@ -6,7 +6,11 @@ import { toast } from "sonner"
 import type { SheetItem } from "@/lib/sheet"
 import type { Draft, Field } from "@/components/routine/entrenar/types"
 import { numStr, parseNum, round2, sanitizeDecimal, sanitizeInt } from "@/lib/num"
-import { useDeleteSetLog, useSaveSetLogs } from "@/hooks/use-sessions"
+import {
+  useDeleteSetLog,
+  useSaveSetLogs,
+  useUpdateSession,
+} from "@/hooks/use-sessions"
 import { entriesFor, findSetLogId } from "@/lib/set-logs"
 import { e1rm, topE1RM, type SetEntry, type SetStatus } from "@/lib/training-math"
 import type { ExerciseHistory, SetLogUpsert, WorkoutSession } from "@/types/api"
@@ -141,6 +145,7 @@ export function useTrainingSession({
 
   const saveSetLogs = useSaveSetLogs(sessionId ?? "", dayId)
   const deleteSetLog = useDeleteSetLog(sessionId ?? "", dayId)
+  const updateSession = useUpdateSession(sessionId ?? "", dayId)
 
   // Registro por miembro (A/B…) × ronda. Los tres estados se encadenan: el
   // cursor sale del registro y el borrador, del cursor.
@@ -358,6 +363,12 @@ export function useTrainingSession({
     // derivados
     unitStatuses,
     allClosed,
+    /**
+     * El entrenamiento del día ya se dio por terminado. Mientras sea `false` lo
+     * cargado es parcial, y el gráfico de progresión no lo usa para medir.
+     */
+    sessionClosed: session?.completedAt != null,
+    finishing: updateSession.isPending,
     slotState,
     refSet,
     refWeek,
@@ -384,5 +395,31 @@ export function useTrainingSession({
     omitRound,
     resetExercise,
     endRest: () => setResting(false),
+    /**
+     * Cierra el entrenamiento del día (`PATCH /sessions/:id`).
+     *
+     * Es lo que convierte lo cargado en historial comparable: hasta que no se
+     * cierra, la sesión es parcial. Devuelve si salió bien para que el call
+     * site decida si navegar — no vale irse de la pantalla dando por cerrado
+     * algo que quedó abierto.
+     */
+    /** Vuelve a abrir un día ya cerrado, para seguir cargando. */
+    reopen: () => {
+      if (!sessionId) return
+      updateSession.mutate(
+        { completed: false },
+        { onError: () => toast.error("No se pudo reabrir el día.") }
+      )
+    },
+    finish: async (): Promise<boolean> => {
+      if (!sessionId) return false
+      try {
+        await updateSession.mutateAsync({ completed: true })
+        return true
+      } catch {
+        toast.error("No se pudo terminar el entrenamiento.")
+        return false
+      }
+    },
   }
 }

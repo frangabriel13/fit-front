@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, Check } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { ProgressionRail } from "@/components/routine/progression-rail"
@@ -59,6 +60,7 @@ export function TrainingScreen({
   totalWeeks: number
   entriesOf: EntriesLookup
 }) {
+  const router = useRouter()
   const slot = slots[slotIdx]
   const members = slot.items
   const isSuper = members.length > 1
@@ -100,6 +102,26 @@ export function TrainingScreen({
           {slot.num}/{String(slots.length).padStart(2, "0")}
         </span>
       </div>
+
+      {/* La API deja seguir cargando series en un día cerrado —sirve para
+          corregir— pero sin este aviso nada delata que ya está terminado, y lo
+          que se cargue después cuenta como definitivo. */}
+      {s.sessionClosed && (
+        <div className="fade-up mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-primary/25 bg-primary/10 px-3.5 py-2.5">
+          <Eyebrow tone="meta" className="flex items-center gap-2 text-primary">
+            <Check className="size-3.5" />
+            Día terminado
+          </Eyebrow>
+          <button
+            type="button"
+            onClick={s.reopen}
+            disabled={s.finishing}
+            className="cursor-pointer font-mono text-[10px] font-semibold tracking-[0.16em] text-primary uppercase underline underline-offset-4 transition-colors hover:text-foreground disabled:opacity-40"
+          >
+            Reabrir
+          </button>
+        </div>
+      )}
 
       <SessionRail
         slots={slots}
@@ -189,7 +211,10 @@ export function TrainingScreen({
               history={history[ex.name]}
               week={week}
               totalWeeks={totalWeeks}
-              today={s.memberLogs[s.cursor.member]}
+              today={{
+                sets: s.memberLogs[s.cursor.member],
+                closed: s.sessionClosed,
+              }}
             />
           </Disclosure>
         </div>
@@ -212,10 +237,16 @@ export function TrainingScreen({
         canComplete={s.canComplete}
         next={next}
         nextHref={hrefFor(next)}
+        finishing={s.finishing}
         onComplete={s.completeUnit}
         onSkip={s.skipUnit}
         onReset={s.resetExercise}
         onRestEnd={s.endRest}
+        onFinish={async () => {
+          // Solo se sale si el cierre entró: irse dando por terminado algo que
+          // quedó abierto es peor que quedarse en la pantalla con el error.
+          if (await s.finish()) router.push("/rutina")
+        }}
       />
     </main>
   )

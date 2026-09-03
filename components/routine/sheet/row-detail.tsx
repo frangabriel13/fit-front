@@ -20,6 +20,7 @@ export function RowDetail({
   history,
   week,
   totalWeeks,
+  sessionClosed = false,
   readOnly = false,
 }: {
   ex: PlanExercise
@@ -28,6 +29,8 @@ export function RowDetail({
   history: ExerciseHistory | undefined
   week: number
   totalWeeks: number
+  /** El entrenamiento de hoy ya se cerró; hasta entonces lo de hoy es parcial. */
+  sessionClosed?: boolean
   readOnly?: boolean
 }) {
   const prevWeek = history?.weeks.at(-1) ?? null
@@ -100,7 +103,7 @@ export function RowDetail({
               history={history}
               week={week}
               totalWeeks={totalWeeks}
-              today={entries}
+              today={{ sets: entries, closed: sessionClosed }}
             />
           </section>
         )}

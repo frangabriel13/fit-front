@@ -18,6 +18,7 @@ export function SheetRow({
   history,
   week,
   totalWeeks,
+  sessionClosed = false,
   expanded,
   onToggle,
   readOnly = false,
@@ -28,6 +29,7 @@ export function SheetRow({
   history: ExerciseHistory | undefined
   week: number
   totalWeeks: number
+  sessionClosed?: boolean
   expanded: boolean
   onToggle: () => void
   readOnly?: boolean
@@ -114,6 +116,7 @@ export function SheetRow({
           history={history}
           week={week}
           totalWeeks={totalWeeks}
+          sessionClosed={sessionClosed}
           readOnly={readOnly}
         />
       )}

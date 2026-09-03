@@ -1,5 +1,7 @@
 "use client"
 
+import { toast } from "sonner"
+
 import { useState } from "react"
 
 import { DayTabs } from "@/components/routine/sheet/day-tabs"
@@ -8,6 +10,7 @@ import { SessionCta } from "@/components/routine/sheet/session-cta"
 import { SheetHeader } from "@/components/routine/sheet/sheet-header"
 import { SheetRow } from "@/components/routine/sheet/sheet-row"
 import { useTodaysSession } from "@/hooks/use-active-session"
+import { useDeleteSession } from "@/hooks/use-sessions"
 import type { PlanDay } from "@/lib/plan"
 import { hhmm } from "@/lib/dates"
 import { toSheetItems } from "@/lib/sheet"
@@ -53,6 +56,8 @@ export function RoutineView({
     entriesFor(session?.setLogs, exerciseId, sets)
 
   const hasSession = !!sessionId
+  const sessionClosed = session?.completedAt != null
+  const deleteSession = useDeleteSession(day.id)
   const doneCount = day.exercises.filter(
     (e) => exerciseState(entriesOf(e.id, e.sets)) === "done"
   ).length
@@ -75,9 +80,18 @@ export function RoutineView({
         key={`session-${day.id}`}
         day={day}
         hasSession={hasSession}
+        closed={sessionClosed}
         startedAt={session ? hhmm(session.performedAt) : null}
+        finishedAt={session?.completedAt ? hhmm(session.completedAt) : null}
         doneCount={doneCount}
         readOnly={readOnly}
+        discarding={deleteSession.isPending}
+        onDiscard={() => {
+          if (!sessionId) return
+          deleteSession.mutate(sessionId, {
+            onError: () => toast.error("No se pudo descartar el día."),
+          })
+        }}
       />
 
       <SheetHeader />
@@ -95,6 +109,7 @@ export function RoutineView({
             history={history[item.ex.name]}
             week={week}
             totalWeeks={totalWeeks}
+            sessionClosed={sessionClosed}
             expanded={expanded === item.ex.id}
             onToggle={() => toggle(item.ex.id)}
             readOnly={readOnly}
@@ -103,7 +118,12 @@ export function RoutineView({
       </ul>
 
       {!readOnly && (
-        <SessionCta day={day} hasSession={hasSession} doneCount={doneCount} />
+        <SessionCta
+          day={day}
+          hasSession={hasSession}
+          closed={sessionClosed}
+          doneCount={doneCount}
+        />
       )}
     </div>
   )

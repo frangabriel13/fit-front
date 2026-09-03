@@ -21,10 +21,14 @@ const done = (weight: number, reps: number): SetEntry => ({
 const values = (p: ReturnType<typeof progression>) =>
   p!.nodes.map((n) => (n.value == null ? null : Math.round(n.value)))
 
+/** Lo de hoy con la sesión abierta (parcial) o cerrada (ya es historial). */
+const abierta = (sets: SetEntry[]) => ({ sets, closed: false })
+const cerrada = (sets: SetEntry[]) => ({ sets, closed: true })
+
 describe("progression", () => {
   it("sin historial y sin series de hoy no hay nada que dibujar", () => {
     expect(progression(undefined, 1, 4)).toBeNull()
-    expect(progression(history(), 1, 4, [])).toBeNull()
+    expect(progression(history(), 1, 4, cerrada([]))).toBeNull()
   })
 
   it("hay una columna por semana del macrociclo", () => {
@@ -41,19 +45,24 @@ describe("progression", () => {
 
   it("la semana en curso vale lo que se está levantando ahora", () => {
     // Todavía no está en el historial: el registro llega al cerrar la semana.
-    const p = progression(history([set(60, 10)]), 2, 2, [done(70, 10)])
+    const p = progression(history([set(60, 10)]), 2, 2, cerrada([done(70, 10)]))
     expect(values(p)).toEqual([80, 93])
     expect(p!.nodes[1].today).toBe(true)
   })
 
   it("lo ya registrado le gana a las series de hoy", () => {
-    const p = progression(history([set(60, 10)], [set(65, 10)]), 2, 2, [done(70, 10)])
+    const p = progression(
+      history([set(60, 10)], [set(65, 10)]),
+      2,
+      2,
+      cerrada([done(70, 10)])
+    )
     expect(values(p)).toEqual([80, 87])
   })
 
   it("de hoy solo cuentan las series hechas", () => {
     const pendientes: SetEntry[] = [{ status: "pending" }, { status: "skipped" }]
-    expect(progression(history(), 1, 2, pendientes)).toBeNull()
+    expect(progression(history(), 1, 2, cerrada(pendientes))).toBeNull()
   })
 
   it("la ganancia va de la primera semana con datos a la referencia actual", () => {
@@ -108,5 +117,40 @@ describe("barHeightPct", () => {
   it("todas las semanas iguales quedan parejas arriba", () => {
     // Una meseta es una meseta: no hay ruido que amplificar.
     expect(barHeightPct(80, 80)).toBe(100)
+  })
+})
+
+describe("progression · sesión abierta vs cerrada", () => {
+  it("con la sesión ABIERTA lo de hoy se dibuja pero no mide la tendencia", () => {
+    // A mitad del entrenamiento puede haber cargada solo la entrada en calor.
+    // Medir contra eso mostraba una caída que no pasó.
+    const p = progression(
+      history([set(60, 10)], [set(80, 10)]),
+      3,
+      3,
+      abierta([done(40, 10)])
+    )
+    expect(values(p)).toEqual([80, 107, 53]) // la barra de hoy SÍ aparece
+    expect(p!.trend).toBe("up") // …pero la tendencia compara 80 → 107
+    expect(p!.gain).toBe(27)
+  })
+
+  it("al cerrarla, lo de hoy pasa a ser la referencia", () => {
+    const p = progression(
+      history([set(60, 10)], [set(80, 10)]),
+      3,
+      3,
+      cerrada([done(40, 10)])
+    )
+    expect(values(p)).toEqual([80, 107, 53])
+    expect(p!.trend).toBe("down") // ahora sí: 80 → 53
+    expect(p!.gain).toBe(-27)
+  })
+
+  it("sin series de hoy da igual si está abierta o cerrada", () => {
+    const args = [history([set(60, 10)], [set(65, 10)]), 2, 2] as const
+    expect(progression(...args, abierta([]))).toEqual(
+      progression(...args, cerrada([]))
+    )
   })
 })

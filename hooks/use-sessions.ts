@@ -5,7 +5,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api, unwrap } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
 import { OPTIMISTIC_ID_PREFIX } from "@/lib/set-logs"
-import type { SetLog, SetLogUpsert, WorkoutSession } from "@/types/api"
+import type {
+  SessionPatch,
+  SetLog,
+  SetLogUpsert,
+  WorkoutSession,
+} from "@/types/api"
 
 /**
  * La ÚLTIMA sesión de un día. Con `userId`, la de ese cliente; sin él, la propia.
@@ -52,6 +57,53 @@ export function useCreateSession(dayId: string) {
         queryKeys.sessions.detail(session.id),
         session
       )
+    },
+  })
+}
+
+/**
+ * Cierra o reabre la sesión, y edita sus notas (`PATCH /sessions/:id`).
+ *
+ * `completed: true` la cierra con la hora del server; `false` la reabre.
+ * Es idempotente: cerrar dos veces conserva la hora del primer cierre.
+ *
+ * Cerrarla es lo que la vuelve comparable. Mientras `completedAt` sea `null`
+ * la sesión es parcial —puede tener cargada solo la entrada en calor— y el
+ * gráfico de progresión no la usa para medir la tendencia.
+ */
+export function useUpdateSession(sessionId: string, dayId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (patch: SessionPatch) =>
+      unwrap<WorkoutSession>(api.patch(`/sessions/${sessionId}`, patch)),
+    onSuccess: (session) => {
+      queryClient.setQueryData(queryKeys.sessions.detail(sessionId), session)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.sessions.byDay(dayId),
+      })
+    },
+  })
+}
+
+/**
+ * Borra una sesión entera (`DELETE /sessions/:id`, 204).
+ *
+ * Solo mientras siga ABIERTA: una sesión cerrada es historial y responde 409.
+ * Es para el "la abrí sin querer y me quedó el día empezado", no para borrar
+ * un entrenamiento que pasó.
+ */
+export function useDeleteSession(dayId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      unwrap<void>(api.delete(`/sessions/${sessionId}`)),
+    onSuccess: (_data, sessionId) => {
+      queryClient.removeQueries({
+        queryKey: queryKeys.sessions.detail(sessionId),
+      })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.sessions.byDay(dayId),
+      })
     },
   })
 }

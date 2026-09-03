@@ -89,6 +89,7 @@ describe("findSetLogId", () => {
     id: "s1",
     dayId: "d1",
     performedAt: new Date().toISOString(),
+    completedAt: null,
     setLogs: logs,
   })
 

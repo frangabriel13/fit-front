@@ -110,9 +110,17 @@ Nada por encima de estos módulos debería formatear un rango de reps ni leer
 - `hooks/use-plan.ts` — `usePlan(userId?)`, el compuesto que usan las pantallas
   de quien entrena: lista → detalle → progreso, resuelto a los `PlanDay[]` de la
   semana en curso más el historial por nombre de ejercicio. Toma la **primera**
-  rutina, y con eso alcanza: un usuario tiene exactamente una asignada (regla
-  del producto). La API llama al mismo filtro `clientId` en `/splits` y `userId`
-  en el resto; este hook lo esconde.
+  rutina y eso es exacto: la API garantiza que un cliente tiene una sola rutina
+  activa (asignarle una segunda responde 409), así que la lista trae 0 o 1. El
+  filtro por persona se llama `userId` en los tres endpoints — `clientId` es un
+  alias que la API acepta, pero acá se usa uno solo.
+- **Una sesión se cierra.** `WorkoutSession.completedAt` es lo que separa un
+  entrenamiento terminado de uno a medias, y lo usa `lib/progression.ts`: la
+  barra de la semana en curso se dibuja igual, pero el chip de ganancia solo se
+  compara contra sesiones CERRADAS. Medir contra una abierta —que puede tener
+  cargada solo la entrada en calor— dibujaba caídas que no existían. Cierra el
+  CTA del último ejercicio (`ActionBar`), y `DELETE /sessions/:id` descarta un
+  día abierto desde `/rutina`.
 - `hooks/use-reorder.ts` + `lib/reorder.ts` — la posición es un `order` por
   elemento y la API no tiene endpoint de reordenar, así que mover algo son N
   `PATCH`. `reorder()` renumera desde el **mínimo que ya había** (días y

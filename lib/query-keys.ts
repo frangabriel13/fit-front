@@ -11,7 +11,7 @@ export const queryKeys = {
   // mira su propia rutina y la de cada cliente en la misma sesión, y sin esto
   // compartirían caché.
   splits: {
-    all: (clientId?: string) => ["splits", clientId ?? "me"] as const,
+    all: (userId?: string) => ["splits", userId ?? "me"] as const,
     detail: (id: string) => ["split", id] as const,
   },
   sessions: {
