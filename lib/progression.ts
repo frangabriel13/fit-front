@@ -22,6 +22,13 @@ export interface ProgressionNode {
   today: boolean
 }
 
+/** Lo cargado hoy, y si el entrenamiento ya se dio por terminado. */
+export interface TodaySets {
+  sets: SetEntry[]
+  /** La sesión de hoy tiene `completedAt`. */
+  closed: boolean
+}
+
 export interface Progression {
   nodes: ProgressionNode[]
   /** Diferencia en kg entre la primera semana con datos y la referencia actual. */
@@ -48,10 +55,10 @@ export function progression(
   week: number,
   totalWeeks: number,
   /** Series de hoy, si el ejercicio se está entrenando en este momento. */
-  today?: SetEntry[]
+  today?: TodaySets
 ): Progression | null {
   const weeks = history?.weeks ?? []
-  const done = (today ?? []).filter((s) => s.status === "done")
+  const done = (today?.sets ?? []).filter((s) => s.status === "done")
   const todayTop = done.length > 0 ? topE1RM(done) : null
 
   if (weeks.length === 0 && todayTop == null) return null
@@ -79,7 +86,13 @@ export function progression(
   }))
 
   const first = known[0] ?? null
-  const last = todayTop ?? topE1RM(weeks.at(-1) ?? [])
+  // La ganancia solo se mide contra sesiones CERRADAS. Una sesión abierta es
+  // parcial —a mitad de entrenamiento puede tener solo la entrada en calor— y
+  // compararse contra eso dibujaba una caída que no pasó. La barra de la semana
+  // en curso sí se dibuja igual: ver cuánto llevás hoy sirve; que te diga que
+  // retrocediste, no.
+  const last =
+    (today?.closed ? todayTop : null) ?? topE1RM(weeks.at(-1) ?? [])
   const gain = first != null && last != null ? Math.round(last - first) : null
   // Menos de un kilo de diferencia es ruido de medición, no una tendencia.
   const trend: Trend | null =

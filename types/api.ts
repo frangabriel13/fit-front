@@ -7,6 +7,12 @@ export interface User {
   email: string
   name: string
   role: UserRole
+  /**
+   * La contraseña es la provisoria que puso el entrenador. Nace en `true` con
+   * el alta y se apaga sola cuando el propio usuario usa
+   * `POST /auth/change-password` — un reset del entrenador la vuelve a prender.
+   */
+  mustChangePassword: boolean
 }
 
 export interface DayExercise {
@@ -44,10 +50,21 @@ export interface Microcycle {
   days: Day[]
 }
 
+/** A quién está asignada una rutina. Por regla del producto, 0 o 1. */
+export interface SplitClient {
+  id: string
+  name: string
+}
+
 export interface Split {
   id: string
   name: string
   description?: string | null
+  /**
+   * Los clientes con la rutina asignada. La API garantiza que un cliente tiene
+   * una sola rutina activa, así que en la práctica es `[]` o un elemento.
+   */
+  clients: SplitClient[]
   microcycles: Microcycle[]
 }
 
@@ -67,6 +84,11 @@ export interface WorkoutSession {
   id: string
   dayId: string
   performedAt: string
+  /**
+   * Cuándo se dio por terminado el entrenamiento (ISO 8601), o `null` si sigue
+   * abierto. Lo que está abierto es parcial: no se compara contra eso.
+   */
+  completedAt: string | null
   notes?: string | null
   setLogs: SetLog[]
 }
@@ -100,6 +122,24 @@ export interface ClientPayload {
 export interface ChangePasswordPayload {
   currentPassword: string
   newPassword: string
+}
+
+/**
+ * Edición de un cliente por su entrenador (`PATCH /clients/:id`).
+ *
+ * Campo ausente = no tocar. `password` es el reset del entrenador: pisa la que
+ * haya y deja al cliente con `mustChangePassword` en `true` otra vez.
+ */
+export interface ClientPatch {
+  name?: string
+  email?: string
+  password?: string
+}
+
+/** Body de `PATCH /sessions/:id`. `completed` cierra (true) o reabre (false). */
+export interface SessionPatch {
+  notes?: string
+  completed?: boolean
 }
 
 export interface SplitPayload {

@@ -1,19 +1,24 @@
 import Link from "next/link"
-import { Play } from "lucide-react"
+import { Check, Play } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
 import { Button } from "@/components/ui/button"
 import type { PlanDay } from "@/lib/plan"
 import { trainHref } from "@/lib/routes"
 
-/** CTA de sesión fijo al pulgar (solo móvil). */
+/**
+ * CTA de sesión fijo al pulgar (solo móvil). Gemelo de `SessionCard`, con los
+ * mismos tres estados: sin empezar, en curso y terminada.
+ */
 export function SessionCta({
   day,
   hasSession,
+  closed,
   doneCount,
 }: {
   day: PlanDay
   hasSession: boolean
+  closed: boolean
   doneCount: number
 }) {
   return (
@@ -25,10 +30,17 @@ export function SessionCta({
           </Eyebrow>
           <p className="mt-0.5 truncate text-[13px]">
             {hasSession ? (
-              <span className="flex items-center gap-1.5 text-ember">
-                <span className="inline-block size-1.5 animate-pulse rounded-full bg-ember" />
-                En curso · {doneCount}/{day.exercises.length}
-              </span>
+              closed ? (
+                <span className="flex items-center gap-1.5 text-primary">
+                  <Check className="size-3.5" />
+                  Terminada · {doneCount}/{day.exercises.length}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-ember">
+                  <span className="inline-block size-1.5 animate-pulse rounded-full bg-ember" />
+                  En curso · {doneCount}/{day.exercises.length}
+                </span>
+              )
             ) : (
               <span className="text-muted-foreground">
                 {day.exercises.length} ejercicios
@@ -43,7 +55,7 @@ export function SessionCta({
         >
           <Link href={trainHref(day.id)}>
             <Play className="size-4 fill-current" />
-            {hasSession ? "Reanudar" : "Comenzar"}
+            {hasSession ? (closed ? "Ver" : "Reanudar") : "Comenzar"}
           </Link>
         </Button>
       </div>

@@ -82,6 +82,7 @@ const ex = (id: string, order: number): DayExercise => ({
 const split: Split = {
   id: "s",
   name: "Rutina",
+  clients: [],
   microcycles: [
     {
       id: "m1",

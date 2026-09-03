@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Layers, MoreVertical, Pencil, Trash2 } from "lucide-react"
+import { Layers, MoreVertical, Pencil, Trash2, UserRound } from "lucide-react"
 import { toast } from "sonner"
 
 import { DeleteConfirmDialog } from "@/components/splits/delete-confirm-dialog"
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useDeleteSplit } from "@/hooks/use-splits"
+import { cn } from "@/lib/utils"
 import type { Split } from "@/types/api"
 
 export function SplitCard({ split, index = 0 }: { split: Split; index?: number }) {
@@ -34,6 +35,15 @@ export function SplitCard({ split, index = 0 }: { split: Split; index?: number }
   }
 
   const microcycleCount = split.microcycles?.length ?? 0
+  // El invariante de la API es que un CLIENTE tiene una sola rutina; al revés
+  // no: la misma rutina puede servir de plantilla para varios.
+  const asignados = split.clients ?? []
+  const aQuien =
+    asignados.length === 0
+      ? "Sin asignar"
+      : asignados.length <= 2
+        ? asignados.map((c) => c.name).join(", ")
+        : `${asignados[0].name} +${asignados.length - 1}`
 
   return (
     <>
@@ -85,14 +95,29 @@ export function SplitCard({ split, index = 0 }: { split: Split; index?: number }
           </DropdownMenu>
         </div>
 
-        <Eyebrow
-          as="p"
-          tone="meta"
-          className="mt-3 flex items-center gap-1.5 text-faint"
-        >
-          <Layers className="size-3.5" />
-          {microcycleCount} {microcycleCount === 1 ? "semana" : "semanas"}
-        </Eyebrow>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <Eyebrow
+            as="p"
+            tone="meta"
+            className="flex items-center gap-1.5 text-faint"
+          >
+            <Layers className="size-3.5" />
+            {microcycleCount} {microcycleCount === 1 ? "semana" : "semanas"}
+          </Eyebrow>
+          {/* Sin esto todas las rutinas se ven iguales y no hay forma de saber
+              de quién es cuál. */}
+          <Eyebrow
+            as="p"
+            tone="meta"
+            className={cn(
+              "flex min-w-0 items-center gap-1.5",
+              asignados.length > 0 ? "text-primary" : "text-faint"
+            )}
+          >
+            <UserRound className="size-3.5 shrink-0" />
+            <span className="truncate">{aQuien}</span>
+          </Eyebrow>
+        </div>
       </div>
 
       <SplitFormDialog

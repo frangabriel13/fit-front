@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AxiosError } from "axios"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { clientSchema, type ClientValues } from "@/lib/schemas"
-import { useCreateClient } from "@/hooks/use-clients"
+import { clientEditSchema, type ClientEditValues } from "@/lib/schemas"
+import { useCreateClient, useUpdateClient } from "@/hooks/use-clients"
+import type { User } from "@/types/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -33,48 +34,97 @@ import {
 interface ClientFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Presente = editar; ausente = dar de alta. */
+  client?: User
 }
 
 /**
- * Alta de un cliente por su entrenador.
+ * Alta y edición de un cliente.
  *
- * No hay edición: la API solo expone `POST /clients` y `GET /clients`. Tampoco
- * hay baja, así que el diálogo no ofrece ninguna de las dos.
+ * En edición la contraseña es opcional y funciona como reset: cargarla pisa la
+ * que tenga y deja al cliente con `mustChangePassword` otra vez, así que la app
+ * le va a volver a pedir que elija una.
  */
 export function ClientFormDialog({
   open,
   onOpenChange,
+  client,
 }: ClientFormDialogProps) {
+  const isEdit = !!client
   const create = useCreateClient()
+  const update = useUpdateClient()
+  const isPending = create.isPending || update.isPending
 
-  const form = useForm<ClientValues>({
-    resolver: zodResolver(clientSchema),
+  // Un solo schema con un refine condicional, y no dos schemas: dos tipos
+  // distintos de zod rompen la inferencia del resolver. La contraseña es
+  // opcional al editar —vacía = no tocarla— y obligatoria al dar de alta.
+  const schema = useMemo(
+    () =>
+      clientEditSchema.refine((v) => isEdit || v.password.length >= 8, {
+        message: "Mínimo 8 caracteres",
+        path: ["password"],
+      }),
+    [isEdit]
+  )
+
+  const form = useForm<ClientEditValues>({
+    resolver: zodResolver(schema),
     defaultValues: { email: "", name: "", password: "" },
   })
 
   useEffect(() => {
-    if (open) form.reset({ email: "", name: "", password: "" })
-  }, [open, form])
+    if (open) {
+      form.reset({
+        email: client?.email ?? "",
+        name: client?.name ?? "",
+        password: "",
+      })
+    }
+  }, [open, client, form])
 
-  function onSubmit(values: ClientValues) {
-    create.mutate(values, {
-      onSuccess: (client) => {
-        toast.success(`${client.name} ya puede entrar`)
-        onOpenChange(false)
-      },
-      onError: (error) => {
-        // El 409 es el único error esperable acá: el resto de las validaciones
-        // ya las cubre el schema, que copia los límites del `CreateClientDto`.
-        // Va al campo y no a un toast porque se arregla ahí mismo.
-        if ((error as AxiosError).response?.status === 409) {
-          form.setError("email", {
-            message: "Ya hay una cuenta con ese email",
-          })
-          return
+  function onSubmit(values: ClientEditValues) {
+    const onError = (error: unknown) => {
+      // El 409 es el único error esperable acá: el resto de las validaciones ya
+      // las cubre el schema, que copia los límites de la API. Va al campo y no
+      // a un toast porque se arregla ahí mismo.
+      if ((error as AxiosError).response?.status === 409) {
+        form.setError("email", { message: "Ya hay una cuenta con ese email" })
+        return
+      }
+      toast.error(
+        isEdit ? "No se pudo guardar." : "No se pudo dar de alta al cliente."
+      )
+    }
+
+    if (isEdit) {
+      update.mutate(
+        // Campo vacío = no tocar: se omite en vez de mandar "".
+        { id: client!.id, ...values, password: values.password || undefined },
+        {
+          onSuccess: (c) => {
+            toast.success(
+              values.password
+                ? `Contraseña de ${c.name} reseteada`
+                : "Cliente actualizado"
+            )
+            onOpenChange(false)
+          },
+          onError,
         }
-        toast.error("No se pudo dar de alta al cliente.")
-      },
-    })
+      )
+      return
+    }
+
+    create.mutate(
+      values,
+      {
+        onSuccess: (c) => {
+          toast.success(`${c.name} ya puede entrar`)
+          onOpenChange(false)
+        },
+        onError,
+      }
+    )
   }
 
   return (
@@ -82,10 +132,12 @@ export function ClientFormDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display text-2xl leading-none uppercase">
-            Nuevo cliente
+            {isEdit ? "Editar cliente" : "Nuevo cliente"}
           </DialogTitle>
           <DialogDescription>
-            Queda en tu cartera y entra con estos datos.
+            {isEdit
+              ? "Cambiá sus datos o reseteale la contraseña."
+              : "Queda en tu cartera y entra con estos datos."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -124,7 +176,7 @@ export function ClientFormDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    Con esto inicia sesión. Después no se puede cambiar.
+                    Con esto inicia sesión. Se puede corregir después.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -135,17 +187,23 @@ export function ClientFormDialog({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña provisoria</FormLabel>
+                  <FormLabel>
+                    {isEdit ? "Nueva contraseña" : "Contraseña provisoria"}
+                  </FormLabel>
                   <FormControl>
                     <PasswordInput
                       defaultVisible
                       autoComplete="new-password"
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder={
+                        isEdit ? "Dejala vacía para no tocarla" : "Mínimo 8 caracteres"
+                      }
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Se la tenés que pasar vos. La cambia después desde su cuenta.
+                    {isEdit
+                      ? "Solo si necesita una nueva. Se la vas a tener que pasar vos, y la cambia al entrar."
+                      : "Se la tenés que pasar vos. La cambia después desde su cuenta."}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -153,9 +211,9 @@ export function ClientFormDialog({
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={create.isPending}>
-                {create.isPending && <Loader2 className="animate-spin" />}
-                Dar de alta
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="animate-spin" />}
+                {isEdit ? "Guardar" : "Dar de alta"}
               </Button>
             </DialogFooter>
           </form>

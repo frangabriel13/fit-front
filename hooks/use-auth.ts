@@ -51,9 +51,16 @@ export function useLogin() {
  * tipear no puede costar la sesión.
  */
 export function useChangePassword() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: ChangePasswordPayload) =>
       unwrap<void>(api.post("/auth/change-password", payload)),
+    // `mustChangePassword` se apaga del lado del server con este mismo request,
+    // así que hay que volver a pedir /auth/me: si no, el aviso de contraseña
+    // provisoria sigue en pantalla hasta que venza la caché.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
+    },
   })
 }
 

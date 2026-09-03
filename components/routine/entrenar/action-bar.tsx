@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, Check, RotateCcw } from "lucide-react"
+import { ArrowRight, Check, Loader2, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { RestTimer } from "./rest-timer"
@@ -11,6 +11,11 @@ import { slotTitle, type Slot } from "./slots"
  * Pie fijo, con tres caras excluyentes: cargando (CTA + omitir), descansando
  * (el temporizador ocupa el lugar del CTA) y ejercicio cerrado (salto al
  * siguiente). Los tres miden lo mismo, así que nada salta al alternarse.
+ *
+ * En el ÚLTIMO ejercicio el salto se convierte en acción: terminar el día
+ * cierra la sesión contra la API en vez de solo volver a `/rutina`. Es el
+ * momento en que lo cargado deja de ser parcial y pasa a ser historial
+ * comparable, así que tiene que ser un gesto y no un efecto de navegar.
  */
 export function ActionBar({
   resting,
@@ -20,10 +25,12 @@ export function ActionBar({
   canComplete,
   next,
   nextHref,
+  finishing,
   onComplete,
   onSkip,
   onReset,
   onRestEnd,
+  onFinish,
 }: {
   resting: boolean
   allClosed: boolean
@@ -32,10 +39,14 @@ export function ActionBar({
   canComplete: boolean
   next?: Slot
   nextHref: string
+  /** El cierre de la sesión está en vuelo. */
+  finishing: boolean
   onComplete: () => void
   onSkip: () => void
   onReset: () => void
   onRestEnd: () => void
+  /** Cierra la sesión y, si sale bien, sale de la pantalla. */
+  onFinish: () => void
 }) {
   return (
     <div className="sticky bottom-0 z-20 -mx-5 mt-auto border-t border-edge bg-background px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -43,17 +54,32 @@ export function ActionBar({
         <RestTimer seconds={restSeconds} onSkip={onRestEnd} onDone={onRestEnd} />
       ) : allClosed ? (
         <div className="flex items-center gap-3">
-          <Button
-            asChild
-            className="h-14 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
-          >
-            <Link href={nextHref}>
-              <span className="truncate">
-                {next ? `Siguiente · ${next.num} ${slotTitle(next)}` : "Terminar el día"}
-              </span>
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          {next ? (
+            <Button
+              asChild
+              className="h-14 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
+            >
+              <Link href={nextHref}>
+                <span className="truncate">
+                  Siguiente · {next.num} {slotTitle(next)}
+                </span>
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              onClick={onFinish}
+              disabled={finishing}
+              className="h-14 flex-1 text-[12px] font-semibold tracking-[0.14em] uppercase"
+            >
+              {finishing ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Check className="size-4" />
+              )}
+              <span className="truncate">Terminar el día</span>
+            </Button>
+          )}
           <button
             type="button"
             aria-label="Reiniciar ejercicio"

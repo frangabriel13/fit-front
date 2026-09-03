@@ -61,20 +61,37 @@ Todos requieren `Authorization` salvo `POST /auth/login`.
 |---|---|---|---|
 | `POST` | `/auth/login` | `LoginPayload` | `LoginResponse` |
 | `GET` | `/auth/me` | — | `User` |
+| `POST` | `/auth/change-password` | `ChangePasswordPayload` | 204 |
 
 `POST /auth/login` con credenciales inválidas → **401**.
+
+`POST /auth/change-password` con la contraseña actual equivocada → **400**, no
+401: equivocarse al tipear no puede costar la sesión. El token emitido antes del
+cambio sigue siendo válido. Este endpoint es lo único que apaga
+`User.mustChangePassword`.
 
 ### Clientes
 
 | método | path | body | respuesta |
 |---|---|---|---|
 | `GET` | `/clients` | — | `User[]` |
+| `POST` | `/clients` | `ClientPayload` | `User` |
+| `PATCH` | `/clients/:id` | `ClientPatch` | `User` |
+| `DELETE` | `/clients/:id` | — | 204 |
 
 La cartera del entrenador logueado: los `User` con `role: "client"` a su cargo.
 Si quien llama **no** es `trainer` → **403** (no 401, ver arriba).
 
-> El modelo de "qué cliente pertenece a qué entrenador" todavía no existe en el
-> frontend. Definilo del lado del backend; el frontend solo consume la lista.
+- El alta deja al cliente con `mustChangePassword: true`: la contraseña la
+  elige el entrenador y se la pasa por fuera de la app.
+- En el PATCH, **campo ausente = no tocar**. El email se normaliza solo
+  (minúsculas, sin espacios) y uno ya usado → **409**. Un id que no es de tu
+  cartera → **404**.
+- `password` en el PATCH es el reset del entrenador: pisa la que haya y vuelve
+  a prender `mustChangePassword`.
+- La baja es **lógica**: conserva el historial y corta el acceso en el acto. Si
+  ese cliente tenía sesión abierta en otro dispositivo, su próximo request es
+  401 y el front lo desloguea.
 
 ### Splits (rutinas)
 
@@ -121,6 +138,8 @@ busca el día dentro de esa estructura, no hace una llamada aparte.
 | `GET` | `/days/:dayId/sessions` | — | `WorkoutSession[]` |
 | `GET` | `/sessions/:id` | — | `WorkoutSession` |
 | `POST` | `/days/:dayId/sessions` | `{}` | `WorkoutSession` |
+| `PATCH` | `/sessions/:id` | `SessionPatch` | `WorkoutSession` |
+| `DELETE` | `/sessions/:id` | — | 204 |
 | `PUT` | `/sessions/:id/set-logs` | `{ setLogs: SetLogUpsert[] }` | `WorkoutSession` |
 | `PATCH` | `/set-logs/:id` | `SetLogPatch` | `SetLog` |
 | `DELETE` | `/set-logs/:id` | — | 204 |
@@ -147,6 +166,15 @@ busca el día dentro de esa estructura, no hace una llamada aparte.
   volvería a mostrar a medio llenar. El modo entrenamiento borra la fila.
 - **`skipped`** distingue "omitida a propósito" de "todavía sin hacer".
   `completed: false, skipped: true` = omitida; ausente en la base = pendiente.
+- **`PATCH /sessions/:id` con `completed: true` cierra el día** con la hora del
+  server; `false` lo reabre. Es idempotente: cerrar dos veces conserva la hora
+  del primer cierre. Cerrarla es lo que vuelve comparable lo cargado — mientras
+  `completedAt` sea `null` la sesión es parcial y `lib/progression.ts` no la usa
+  para medir la tendencia.
+- **`DELETE /sessions/:id` solo funciona con la sesión ABIERTA**; una cerrada es
+  historial y responde **409**. Es para el "la abrí sin querer y me quedó el día
+  empezado": entrar a la pantalla de entrenamiento crea la sesión.
+- El tope del upsert son **500 series por llamada**; pasarse → 400.
 
 ### Progreso del macrociclo
 
@@ -175,7 +203,10 @@ Copiar de `types/api.ts`. Resumen:
 ```ts
 type UserRole = "trainer" | "client"
 
-interface User { id: string; email: string; name: string; role: UserRole }
+interface User {
+  id: string; email: string; name: string; role: UserRole
+  mustChangePassword: boolean        // usa la provisoria que puso el entrenador
+}
 
 interface DayExercise {
   id: string; name: string; order: number; targetSets: number
@@ -196,7 +227,12 @@ interface Day {
   exercises: DayExercise[]
 }
 interface Microcycle { id: string; name: string; order: number; days: Day[] }
-interface Split { id: string; name: string; description?: string | null; microcycles: Microcycle[] }
+interface SplitClient { id: string; name: string }
+interface Split {
+  id: string; name: string; description?: string | null
+  clients: SplitClient[]             // a quién está asignada; puede ser más de uno
+  microcycles: Microcycle[]
+}
 
 interface SetLog {
   id: string; dayExerciseId: string; setNumber: number
@@ -209,13 +245,18 @@ interface SetLog {
 
 interface WorkoutSession {
   id: string; dayId: string; performedAt: string   // ISO 8601
+  completedAt: string | null         // null = abierta; cerrada = comparable
   notes?: string | null
   setLogs: SetLog[]
 }
 
 interface LoginResponse { accessToken: string; user: User }
 interface LoginPayload { email: string; password: string }
-interface SplitPayload { name: string; description?: string }
+interface SplitPayload { name: string; description?: string; clientId?: string }
+interface ClientPayload { email: string; name: string; password: string }
+interface ClientPatch { name?: string; email?: string; password?: string }
+interface ChangePasswordPayload { currentPassword: string; newPassword: string }
+interface SessionPatch { notes?: string; completed?: boolean }
 interface MicrocyclePayload { name: string; order: number }
 interface DayPayload { name: string; order: number }
 interface DayExercisePayload {
@@ -264,17 +305,12 @@ de la API igual que `/splits/*`, y `lib/routine-data.ts` está borrado. El
 entrenador ve la rutina y el progreso de cada cliente en `/clientes/[id]`,
 usando los filtros por usuario.
 
-**Los filtros por usuario no se llaman igual en todos lados.** Es la misma
-persona en los tres casos:
-
-| endpoint | parámetro |
-|---|---|
-| `GET /splits` | `clientId` |
-| `GET /splits/:id/progress` | `userId` |
-| `GET /days/:dayId/sessions` | `userId` |
-
-`hooks/use-plan.ts` lo absorbe con un solo argumento, pero unificar el nombre
-del lado del backend ahorraría la próxima confusión.
+**Cerrado en la ronda del 2 de septiembre de 2026.** El backend resolvió los
+ocho puntos que estaban abiertos: un cliente tiene una sola rutina y la API lo
+hace cumplir (409), se pueden cerrar y borrar sesiones, `SplitDto` informa las
+asignaciones, hay baja y corrección de clientes, `mustChangePassword` viaja en
+`User`, `userId` y `clientId` son alias en los tres endpoints que filtran por
+persona, y el 400 del upsert de series ya nombra el problema real.
 
 Lo que sigue sin resolver:
 
@@ -282,8 +318,8 @@ Lo que sigue sin resolver:
 token del entrenador:
 
 ```
-GET /days/<día>/sessions            → []          (filtrado por usuario)
-GET /sessions/<sesión de un cliente> → 200 + body  (sin filtrar)
+GET /days/<día>/sessions             → solo las propias  (filtra por usuario)
+GET /sessions/<sesión de un cliente> → 200 + body        (sin filtrar)
 ```
 
 El detalle no aplica el criterio del listado. Hoy no rompe nada visible —la
@@ -291,70 +327,25 @@ vista del entrenador es de solo lectura y nunca crea sesiones—, pero es una
 fuga: con el id de una sesión se lee entera sin pasar por el filtro. Hay que
 decidir cuál de las dos respuestas es la correcta y alinear la otra.
 
+**Una sesión cerrada sigue aceptando escrituras.** `PUT /sessions/:id/set-logs`,
+`PATCH /set-logs/:id` y `DELETE /set-logs/:id` funcionan igual con la sesión
+cerrada; solo `DELETE /sessions/:id` responde 409. Probablemente esté bien
+—permite corregir una carga después de terminar— pero convive mal con la idea
+de "historial": lo que se agregue después cuenta como definitivo sin que nada
+lo distinga. El front lo compensa avisando en pantalla que el día está cerrado
+y ofreciendo reabrirlo, pero la decisión es del backend.
+
+**Una rutina puede tener varios clientes.** El invariante que la API garantiza
+es de una sola dirección: un CLIENTE tiene una sola rutina, pero la misma
+rutina se puede asignar a varios a la vez. Es razonable —sirve de plantilla—
+pero conviene que sea una decisión explícita y no un efecto: si alguna vez se
+quiere 1 a 1, hay que impedirlo del lado del server. El front ya lo trata como
+lista (`Split.clients`) y no como un solo cliente.
+
 **Escribir en nombre de un cliente.** No existe y probablemente esté bien así:
 `useActiveSession` solo abre sesiones del usuario logueado, a propósito. Si
 alguna vez un entrenador tiene que cargar series por su cliente, hace falta
 definir quién queda como autor de la sesión.
-
-**Una sola rutina por usuario — decidido, falta que lo garantice la API.**
-La regla del producto es que un usuario tiene **una** rutina asignada a la vez,
-así que `hooks/use-plan.ts` toma la primera de `GET /splits` y con eso alcanza.
-Lo que falta es del lado del backend: hoy nada impide asignarle una segunda a
-alguien que ya tiene una. Verificado, y es peor que "queda invisible" — la
-segunda **tapa** a la primera:
-
-```
-POST /splits {name:"ZZZ vacia", clientId:<diamela>}   → 201
-GET  /splits?clientId=<diamela>  → ["ZZZ vacia", "Hipertrofia · Mesociclo Inferior"]
-```
-
-`usePlan` toma la primera de la lista, y la lista viene con la más nueva
-adelante. O sea que asignar una rutina vacía a alguien que ya entrenaba le
-vacía la pantalla: su rutina real sigue existiendo pero deja de verse, y no hay
-forma de desasignar la nueva para recuperarla.
-
-Sería sano que `POST /splits` / `PATCH /splits/:id` con un `clientId` ya ocupado
-falle, o que desasigne la anterior de forma explícita.
-
-**No hay forma de cerrar una sesión.** `WorkoutSession` no tiene `completedAt`
-ni equivalente, y no existe `PATCH /sessions/:id`. Una sesión nace al empezar a
-entrenar y queda abierta para siempre. Hoy la app lo esquiva —"Terminar el día"
-solo vuelve a `/rutina`— pero sin esto no se puede:
-
-- distinguir "entrenó y terminó" de "abrió la pantalla y se fue";
-- saber si las series de hoy son definitivas (el chip de tendencia de
-  `ProgressionRail` compara contra lo levantado **hasta ahora**, así que a mitad
-  de sesión, con solo la entrada en calor cargada, puede mostrar una caída).
-
-**No se puede dar de baja un cliente ni cambiarle el email.** El alta funciona
-(`POST /clients` → 201, 409 si el email está repetido) y el front la usa desde
-`/clientes`. Lo que no existe es el camino inverso: no hay `DELETE /clients/:id`
-ni `PATCH`, así que un cliente cargado con el email mal escrito queda así para
-siempre y solo se saca por base. Por eso el diálogo de alta avisa que el email
-no se puede cambiar después.
-
-**La contraseña provisoria la elige el entrenador.** No hay invitación por mail
-ni token de primer ingreso: `POST /clients` pide una contraseña, y el entrenador
-se la tiene que pasar al cliente por fuera de la app. El cliente después la
-cambia con `POST /auth/change-password` (204; con la actual equivocada responde
-**400**, no 401, así que no desloguea, y el token viejo sigue siendo válido
-después del cambio).
-
-**`SplitDto` no dice a quién está asignada la rutina.** El editor ya puede
-asignar (`POST /splits` y `PATCH /splits/:id` con `clientId`), pero no puede
-**mostrar** el resultado: la respuesta trae `id`, `name`, `description` y
-`microcycles`, y nada de las asignaciones. Consecuencias hoy:
-
-- `/splits` no puede decir "Rutina de Diamela"; todas se ven iguales.
-- Al editar, el selector de cliente arranca vacío a propósito — preseleccionar
-  sería inventar un dato que la API no dio.
-
-Alcanzaría con agregar el cliente asignado (id y nombre) a `SplitDto`.
-
-**No hay forma de desasignar.** Mandar `clientId` hace un upsert que asigna o
-reactiva; no existe el camino inverso. Verificado: renombrar una rutina sin
-mandar `clientId` no toca las asignaciones, que es lo que hace seguro el
-diálogo de edición.
 
 ---
 

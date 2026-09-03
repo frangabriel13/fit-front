@@ -4,6 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { ChevronDown, Dumbbell, KeyRound, LogOut } from "lucide-react"
 
+import { Eyebrow } from "@/components/typography/eyebrow"
+
 import { ChangePasswordDialog } from "@/components/account/change-password-dialog"
 import { useLogout, useMe } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -98,6 +100,31 @@ export function AppHeader() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* La contraseña la eligió el entrenador y se la pasó por fuera de la
+          app. No se puede descartar el aviso a propósito: se va solo cuando
+          la cambian, que es justo lo que queremos que pase. */}
+      {user?.mustChangePassword && (
+        <div className="border-t border-ember/25 bg-ember/10">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2 lg:px-6">
+            <Eyebrow
+              as="p"
+              tone="meta"
+              className="flex items-center gap-2 text-ember"
+            >
+              <KeyRound className="size-3.5" />
+              Estás usando la contraseña que te pasaron
+            </Eyebrow>
+            <button
+              type="button"
+              onClick={() => setPasswordOpen(true)}
+              className="cursor-pointer font-mono text-[10px] font-semibold tracking-[0.16em] text-ember uppercase underline underline-offset-4 transition-colors hover:text-foreground"
+            >
+              Cambiarla
+            </button>
+          </div>
+        </div>
+      )}
 
       <ChangePasswordDialog
         open={passwordOpen}

@@ -1,8 +1,11 @@
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react"
 
 import { Eyebrow } from "@/components/typography/eyebrow"
-import { progression, type Trend } from "@/lib/progression"
-import type { SetEntry } from "@/lib/training-math"
+import {
+  progression,
+  type TodaySets,
+  type Trend,
+} from "@/lib/progression"
 import { cn } from "@/lib/utils"
 import type { ExerciseHistory } from "@/types/api"
 
@@ -59,8 +62,12 @@ export function ProgressionRail({
   /** Semana en curso del macrociclo, 1-based. */
   week: number
   totalWeeks: number
-  /** Series de hoy, si el ejercicio se está entrenando ahora. */
-  today?: SetEntry[]
+  /**
+   * Series de hoy, si el ejercicio se está entrenando ahora, junto con si la
+   * sesión ya se cerró. Sin cerrar, lo de hoy se dibuja pero no cuenta para la
+   * tendencia: ver `lib/progression.ts`.
+   */
+  today?: TodaySets
 }) {
   const chart = progression(history, week, totalWeeks, today)
   if (!chart) return null
