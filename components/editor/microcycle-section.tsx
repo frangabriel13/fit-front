@@ -37,15 +37,15 @@ export function MicrocycleSection({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addDayOpen, setAddDayOpen] = useState(false)
   const deleteMicrocycle = useDeleteMicrocycle(splitId)
-  const reorderDays = useReorder(splitId, "days")
+  const reorderDays = useReorder(splitId, "days", microcycle.id)
 
   const days = [...(microcycle.days ?? [])].sort((a, b) => a.order - b.order)
   const nextOrder =
     days.length > 0 ? Math.max(...days.map((d) => d.order)) + 1 : 0
 
   function moveDay(i: number, dir: -1 | 1) {
-    const { patches } = reorder(days, i, dir)
-    if (patches.length > 0) reorderDays.mutate(patches)
+    const { items, moved } = reorder(days, i, dir)
+    if (moved) reorderDays.mutate(items)
   }
 
   function onConfirmDelete() {

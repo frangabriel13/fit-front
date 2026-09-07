@@ -4,7 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios"
 
-import { clearToken, getToken } from "@/lib/auth"
+import { clearSession, getToken } from "@/lib/auth"
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL
 
@@ -27,7 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      clearToken()
+      clearSession()
       if (!window.location.pathname.startsWith("/login")) {
         window.location.assign("/login")
       }

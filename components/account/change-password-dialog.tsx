@@ -82,7 +82,9 @@ export function ChangePasswordDialog({
       },
       {
         onSuccess: () => {
-          // La sesión sigue viva: el token de antes del cambio no se invalida.
+          // Acá la sesión sigue abierta porque el hook guardó el token nuevo
+          // que devuelve la API. Las de los OTROS dispositivos, no: el cambio
+          // de contraseña las cierra a todas del lado del server.
           toast.success("Contraseña cambiada")
           handleOpenChange(false)
         },
@@ -105,7 +107,8 @@ export function ChangePasswordDialog({
             Cambiar contraseña
           </DialogTitle>
           <DialogDescription>
-            Mínimo 8 caracteres. Vas a seguir con la sesión abierta.
+            Mínimo 8 caracteres. Acá seguís con la sesión abierta; en los
+            otros dispositivos hay que volver a entrar.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

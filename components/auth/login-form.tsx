@@ -42,10 +42,15 @@ export function LoginForm() {
     login.mutate(values, {
       onError: (error) => {
         const status = (error as AxiosError).response?.status
+        // El 429 aparte del 401: la API limita a 10 intentos por minuto y por
+        // IP. Meterlo en el cajón de "credenciales incorrectas" mandaría a
+        // revisar la contraseña justo cuando el problema es esperar un minuto.
         setAuthError(
           status === 401
             ? "Email o contraseña incorrectos."
-            : "No se pudo iniciar sesión. Probá de nuevo."
+            : status === 429
+              ? "Demasiados intentos. Esperá un minuto y probá de nuevo."
+              : "No se pudo iniciar sesión. Probá de nuevo."
         )
       },
     })

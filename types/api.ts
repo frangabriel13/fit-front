@@ -95,8 +95,20 @@ export interface WorkoutSession {
 
 // ---- Respuestas de auth ----
 
-export interface LoginResponse {
+/**
+ * El par de tokens, tal como lo devuelven `/auth/login`, `/auth/refresh` y
+ * `/auth/change-password`.
+ *
+ * El `accessToken` es un JWT stateless: no se puede revocar de a uno y vale
+ * hasta vencer. El `refreshToken` es una fila en la base — por eso es el único
+ * de los dos que se revoca, y por eso `/auth/logout` lo pide a él.
+ */
+export interface AuthTokens {
   accessToken: string
+  refreshToken: string
+}
+
+export interface LoginResponse extends AuthTokens {
   user: User
 }
 
@@ -181,6 +193,23 @@ export interface DayExercisePayload {
   targetRirMax?: number
   toFailure?: boolean
   supersetGroup?: string
+}
+
+/**
+ * Edición de un ejercicio (`PATCH /exercises/:id`).
+ *
+ * `applyToAll` propaga el **nombre nuevo** a todas las apariciones de ese mismo
+ * nombre dentro de la rutina; el resto de los campos se aplican solo al
+ * ejercicio pedido. Existe porque el historial de progreso se agrupa por nombre
+ * (`history[ex.name]`) y un mesociclo repite los mismos ejercicios cada semana:
+ * corregir un typo en una sola semana parte la serie histórica en dos entradas
+ * sin que nada lo delate.
+ *
+ * Es opt-in a propósito. Cambiar una sola semana también es legítimo — en una
+ * progresión la semana 3 puede pasar a sentadilla frontal.
+ */
+export type ExercisePatch = Partial<DayExercisePayload> & {
+  applyToAll?: boolean
 }
 
 // Upsert en lote de set-logs (PUT /sessions/:id/set-logs).

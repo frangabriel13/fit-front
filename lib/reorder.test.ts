@@ -22,25 +22,22 @@ describe("reorder", () => {
     expect(shape(items)).toBe("a:0 c:1 b:2")
   })
 
-  it("en una lista prolija solo cambian los dos que se cruzaron", () => {
-    const { patches } = reorder(list(0, 1, 2, 3), 1, 1)
-    expect(patches).toEqual([
-      { id: "c", order: 1 },
-      { id: "b", order: 2 },
-    ])
+  it("en una lista prolija solo se mueven los dos que se cruzaron", () => {
+    const { items } = reorder(list(0, 1, 2, 3), 1, 1)
+    expect(shape(items)).toBe("a:0 c:1 b:2 d:3")
   })
 
   it("el primero no puede subir y el último no puede bajar", () => {
     const items = list(0, 1, 2)
-    // Devuelve la lista original tal cual: sin PATCH y sin repintar.
-    expect(reorder(items, 0, -1)).toEqual({ items, patches: [] })
-    expect(reorder(items, 2, 1)).toEqual({ items, patches: [] })
+    // Devuelve la lista original tal cual: sin llamada y sin repintar.
+    expect(reorder(items, 0, -1)).toEqual({ items, moved: false })
+    expect(reorder(items, 2, 1)).toEqual({ items, moved: false })
   })
 
   it("un índice fuera de rango no hace nada", () => {
     const items = list(0, 1)
-    expect(reorder(items, 5, 1).patches).toEqual([])
-    expect(reorder(items, -1, 1).patches).toEqual([])
+    expect(reorder(items, 5, 1).moved).toBe(false)
+    expect(reorder(items, -1, 1).moved).toBe(false)
   })
 
   it("respeta la base: los días arrancan en 0", () => {
@@ -54,9 +51,8 @@ describe("reorder", () => {
   })
 
   it("cierra los huecos que hubiera dejado el campo 'Orden' a mano", () => {
-    const { items, patches } = reorder(list(0, 5, 9), 0, 1)
+    const { items } = reorder(list(0, 5, 9), 0, 1)
     expect(shape(items)).toBe("b:0 a:1 c:2")
-    expect(patches).toHaveLength(3)
   })
 
   it("deshace los empates, que son los que impedían moverse", () => {
@@ -120,12 +116,12 @@ describe("applyOrders", () => {
     expect(next.microcycles[0].days[0].exercises.map((e) => e.order)).toEqual([1, 0])
   })
 
-  it("un id que no está en los patches queda intacto", () => {
+  it("un id que no está en la lista queda intacto", () => {
     const next = applyOrders(split, "exercises", [{ id: "e2", order: 0 }])
     expect(next.microcycles[0].days[0].exercises[0]).toEqual(ex("e1", 0))
   })
 
-  it("sin patches devuelve el mismo objeto, no una copia", () => {
+  it("sin números que escribir devuelve el mismo objeto, no una copia", () => {
     // Copiar por copiar haría que React Query notifique un cambio que no hubo.
     expect(applyOrders(split, "days", [])).toBe(split)
   })

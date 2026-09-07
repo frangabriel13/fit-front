@@ -120,15 +120,22 @@ Nada por encima de estos módulos debería formatear un rango de reps ni leer
   compara contra sesiones CERRADAS. Medir contra una abierta —que puede tener
   cargada solo la entrada en calor— dibujaba caídas que no existían. Cierra el
   CTA del último ejercicio (`ActionBar`), y `DELETE /sessions/:id` descarta un
-  día abierto desde `/rutina`.
+  día abierto desde `/rutina`. **Cerrada es inmutable**: la API responde 409 a
+  toda escritura de series, así que `finish` espera las que estén en vuelo antes
+  de mandar el cierre (`settleWrites`) y `blockedByClose` frena las que llegan
+  después, ofreciendo reabrir.
 - `hooks/use-reorder.ts` + `lib/reorder.ts` — la posición es un `order` por
-  elemento y la API no tiene endpoint de reordenar, así que mover algo son N
-  `PATCH`. `reorder()` renumera desde el **mínimo que ya había** (días y
-  ejercicios arrancan en 0, los microciclos en 1 porque el `order` de un
-  microciclo *es* su número de semana) y devuelve solo los que cambiaron;
-  `applyOrders()` los escribe en el `Split` cacheado para repintar sin esperar.
-  No hay campo "Orden" a mano en los diálogos — la posición es trabajo de las
-  flechas.
+  elemento, **único entre hermanos vivos**, y mover algo es UNA llamada:
+  `PUT /splits/:id/microcycles/order`, `/microcycles/:id/days/order` o
+  `/days/:id/exercises/order`, con la lista completa de ids en el orden deseado.
+  Se aplica en una transacción, así que no hay estado a medio aplicar ni hace
+  falta refetchear — la respuesta trae los números finales. `reorder()` renumera
+  desde el **mínimo que ya había** (días y ejercicios arrancan en 0, los
+  microciclos en 1 porque el `order` de un microciclo *es* su número de semana),
+  que es la misma regla que aplica el server; `applyOrders()` escribe esos
+  números en el `Split` cacheado, primero optimista y después con los del
+  server. No hay campo "Orden" a mano en los diálogos — la posición es trabajo
+  de las flechas, y escribir un número ocupado daría 409.
 - `hooks/use-active-session.ts` — `useTodaysSession` lee la sesión de hoy;
   `useActiveSession` la crea si no existe. Mirar una rutina no puede abrir una
   sesión, así que `/rutina` usa la de solo lectura y solo `/rutina/entrenar` usa
@@ -163,14 +170,26 @@ el JWT de verdad es trabajo de la API (responde 401). Después del login,
 `use-auth` hace un `window.location.assign("/")` duro (no `router.replace`) para
 que el proxy vea la cookie recién puesta.
 
+El **refresh** va en su propia cookie (`fitfront_refresh`) y nunca en un header:
+es la credencial de `POST /auth/logout`, que es lo que hace que cerrar sesión
+revoque de verdad y no sea solo borrar cookies. El interceptor **todavía no
+canjea el refresh ante un 401** —sigue deslogueando—, y por eso el access token
+dura 7 días; ver `docs/API-CONTRACT.md` §4.
+
+⚠️ **`POST /auth/change-password` cierra TODAS las sesiones** y devuelve un par
+de tokens nuevo. `useChangePassword` lo guarda antes de invalidar `/auth/me`: si
+no, ese refetch sale con el token ya muerto y el 401 termina en el login justo
+después de cambiar la contraseña.
+
 ### Documentación del contrato
 
 No queda nada mockeado: `lib/mocks/` y `NEXT_PUBLIC_USE_MOCKS` se borraron al
 cerrar la migración, así que la app no arranca sin la API.
 
-`docs/API-CONTRACT.md` es la especificación compartida con el repo del backend,
-incluidos los temas abiertos (alcance de las sesiones entre entrenador y
-cliente, ver la rutina de un cliente).
+`docs/API-CONTRACT.md` es la especificación compartida con el repo del backend
+(el mismo archivo vive en `fit-api/docs/`; cuando cambia la API, manda esa
+copia). Su §4 lista lo que sigue abierto — hoy: escribir series en nombre de un
+cliente, las notas de sesión sin pantalla, y el refresh automático.
 
 ## Convenciones
 

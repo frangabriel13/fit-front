@@ -21,10 +21,13 @@ import type { ExerciseHistory, SetLogUpsert, WorkoutSession } from "@/types/api"
  *
  * El registro es local Y remoto a la vez, a propósito: la pantalla responde al
  * toque sin esperar la red (el borrador, el cursor y el descanso son estado de
- * UI) y cada serie cerrada se manda al toque — completar una serie es un gesto
- * deliberado, no algo que convenga agrupar con debounce como la grilla de
- * `/splits`. Si el guardado falla se avisa; lo cargado no se pierde de la
- * pantalla.
+ * UI) y cada serie cerrada sale al instante, SIN debounce — completar una serie
+ * es un gesto deliberado y no algo que convenga agrupar. Si el guardado falla se
+ * avisa; lo cargado no se pierde de la pantalla.
+ *
+ * Que salga al instante no la deja libre de carreras: la que está en vuelo
+ * cuando se cierra el día llega con la sesión cerrada y se la come un 409. Por
+ * eso `finish` espera la cola (`settleWrites`) antes de mandar el cierre.
  */
 
 /** Cursor sobre (ronda, miembro): la unidad que se está cargando ahora. */
@@ -181,14 +184,77 @@ export function useTrainingSession({
 
   // ── persistencia ──────────────────────────────────────────────────────────
 
+  /**
+   * Escrituras de series todavía en vuelo.
+   *
+   * Existe por el cierre: una sesión con `completedAt` rechaza los set-logs con
+   * 409, así que la serie que salió recién y llega después del `PATCH` de cierre
+   * se pierde sin que nada la reclame. Completar la última serie y tocar
+   * "Terminar el día" enseguida es exactamente esa carrera.
+   */
+  const inFlight = useRef<Promise<unknown>[]>([])
+
+  const track = useCallback((promise: Promise<unknown>) => {
+    // Se guarda una versión que nunca rechaza: esta cola es solo para esperar,
+    // el aviso de error lo da quien la encoló.
+    inFlight.current.push(promise.catch(() => {}))
+  }, [])
+
+  const settleWrites = useCallback(async () => {
+    // `while` y no un solo `await`: mientras esperamos puede entrar otra
+    // escritura, y la cola tiene que quedar vacía de verdad. Se vacía el array
+    // antes de esperarlo para que lo nuevo caiga en la vuelta siguiente.
+    while (inFlight.current.length > 0) {
+      const batch = inFlight.current
+      inFlight.current = []
+      await Promise.all(batch)
+    }
+  }, [])
+
+  const sessionClosed = session?.completedAt != null
+
+  const reopen = useCallback(() => {
+    if (!sessionId) return
+    updateSession.mutate(
+      { completed: false },
+      { onError: () => toast.error("No se pudo reabrir el día.") }
+    )
+  }, [sessionId, updateSession])
+
+  /**
+   * Un día cerrado no acepta escrituras: la API responde 409 a los set-logs de
+   * una sesión con `completedAt`, y con razón — es lo que separa una medición
+   * hecha de algo que se agregó después. Corregir sigue siendo posible, pero
+   * como acto explícito, así que el aviso trae el reabrir a mano en vez de
+   * dejarlo solo en el cartel de arriba.
+   *
+   * La guarda va acá y no en los botones a propósito: frena también el cambio
+   * de estado local, que si no dejaría la planilla mostrando una serie hecha que
+   * el servidor nunca aceptó.
+   */
+  const blockedByClose = useCallback((): boolean => {
+    if (!sessionClosed) return false
+    toast.error("El día está terminado.", {
+      description: "Reabrilo para corregir lo cargado.",
+      action: { label: "Reabrir", onClick: reopen },
+    })
+    return true
+  }, [sessionClosed, reopen])
+
   const push = useCallback(
     (upserts: SetLogUpsert[]) => {
       if (!sessionId || upserts.length === 0) return
-      saveSetLogs.mutate(upserts, {
-        onError: () => toast.error("No se pudo guardar la serie."),
-      })
+      // `mutateAsync` y no `mutate` con `onError`: completar varias series
+      // seguidas dispara varias mutaciones del MISMO hook, y el observer de
+      // TanStack solo conserva los callbacks del último `mutate`. La promesa sí
+      // llega siempre — y además es la que entra en la cola de `settleWrites`.
+      track(
+        saveSetLogs
+          .mutateAsync(upserts)
+          .catch(() => toast.error("No se pudo guardar la serie."))
+      )
     },
-    [sessionId, saveSetLogs]
+    [sessionId, saveSetLogs, track]
   )
 
   /** Borra del servidor las series de estas rondas (resetear = volver a pendiente). */
@@ -216,14 +282,16 @@ export function useTrainingSession({
       // llega siempre. El rollback de la caché vive en el hook y corre igual.
       //
       // Un aviso por reinicio y no uno por serie: si falla, falla por lo mismo.
-      void Promise.allSettled(ids.map((id) => deleteSetLog.mutateAsync(id))).then(
-        (results) => {
-          if (results.some((r) => r.status === "rejected"))
-            toast.error("No se pudo reiniciar.")
-        }
+      track(
+        Promise.allSettled(ids.map((id) => deleteSetLog.mutateAsync(id))).then(
+          (results) => {
+            if (results.some((r) => r.status === "rejected"))
+              toast.error("No se pudo reiniciar.")
+          }
+        )
       )
     },
-    [sessionId, members, session, deleteSetLog]
+    [sessionId, members, session, deleteSetLog, track]
   )
 
   // ── derivados ─────────────────────────────────────────────────────────────
@@ -265,6 +333,7 @@ export function useTrainingSession({
   // ── transiciones ──────────────────────────────────────────────────────────
 
   function writeAndMove(entry: SetEntry) {
+    if (blockedByClose()) return
     const next = memberLogs.map((arr) => arr.slice())
     next[cursor.member][cursor.round] = entry
     const nc = advance(cursor, rounds, members.length)
@@ -303,6 +372,7 @@ export function useTrainingSession({
 
   // Reset/omitir operan a nivel ronda (en biserie, A y B juntas).
   function resetRound(round: number) {
+    if (blockedByClose()) return
     const next = memberLogs.map((arr) => arr.slice())
     members.forEach((_, m) => (next[m][round] = { status: "pending" }))
     setMemberLogs(next)
@@ -314,6 +384,7 @@ export function useTrainingSession({
   }
 
   function omitRound(round: number) {
+    if (blockedByClose()) return
     const next = memberLogs.map((arr) => arr.slice())
     members.forEach((_, m) => (next[m][round] = { status: "skipped" }))
     setMemberLogs(next)
@@ -325,6 +396,7 @@ export function useTrainingSession({
   }
 
   function resetExercise() {
+    if (blockedByClose()) return
     const cleared = blank(members)
     setMemberLogs(cleared)
     setCursor({ round: 0, member: 0 })
@@ -367,7 +439,7 @@ export function useTrainingSession({
      * El entrenamiento del día ya se dio por terminado. Mientras sea `false` lo
      * cargado es parcial, y el gráfico de progresión no lo usa para medir.
      */
-    sessionClosed: session?.completedAt != null,
+    sessionClosed,
     finishing: updateSession.isPending,
     slotState,
     refSet,
@@ -404,16 +476,14 @@ export function useTrainingSession({
      * algo que quedó abierto.
      */
     /** Vuelve a abrir un día ya cerrado, para seguir cargando. */
-    reopen: () => {
-      if (!sessionId) return
-      updateSession.mutate(
-        { completed: false },
-        { onError: () => toast.error("No se pudo reabrir el día.") }
-      )
-    },
+    reopen,
     finish: async (): Promise<boolean> => {
       if (!sessionId) return false
       try {
+        // Primero que lleguen las escrituras en vuelo. Después del cierre la
+        // API las rechaza con 409, así que la última serie cargada se perdería
+        // en silencio si el PATCH le gana la carrera al PUT.
+        await settleWrites()
         await updateSession.mutateAsync({ completed: true })
         return true
       } catch {

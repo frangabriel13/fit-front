@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -91,6 +91,20 @@ export function ExerciseFormDialog({
   const update = useUpdateExercise(splitId)
   const isPending = create.isPending || update.isPending
 
+  // Vive acá y no en el schema porque no es un campo del ejercicio: es cómo
+  // aplicar ESTE guardado.
+  const [applyToAll, setApplyToAll] = useState(true)
+
+  /**
+   * Vuelve al valor por defecto al CERRAR y no al abrir: hacerlo al abrir sería
+   * un `setState` adentro del efecto que rearma el formulario, y así el diálogo
+   * nunca aparece arrastrando la decisión del renombre anterior.
+   */
+  function handleOpenChange(next: boolean) {
+    if (!next) setApplyToAll(true)
+    onOpenChange(next)
+  }
+
   const form = useForm<z.input<typeof exerciseSchema>, unknown, ExerciseValues>({
     resolver: zodResolver(exerciseSchema),
     defaultValues: {
@@ -129,27 +143,43 @@ export function ExerciseFormDialog({
   // `useWatch` y no `form.watch()`: el segundo devuelve una función que el
   // compilador de React no puede memoizar, y saltea la optimización del
   // componente entero.
-  const [toFailure, rirMin] = useWatch({
+  const [toFailure, rirMin, typedName] = useWatch({
     control: form.control,
-    name: ["toFailure", "targetRirMin"],
+    name: ["toFailure", "targetRirMin", "name"],
   })
+
+  /**
+   * Se está cambiando el nombre de un ejercicio que ya existe.
+   *
+   * Solo entonces aparece la opción de propagar: el progreso se agrupa por
+   * NOMBRE (`history[ex.name]`) y un mesociclo repite los mismos ejercicios cada
+   * semana, así que corregir un typo en una sola parte la serie histórica en dos
+   * entradas y no lo delata nada hasta mirar el gráfico. Es una pregunta, no un
+   * automatismo, porque cambiar una sola semana también es legítimo — en una
+   * progresión la semana 3 puede pasar a sentadilla frontal.
+   */
+  const renaming =
+    isEdit && !!typedName?.trim() && typedName.trim() !== exercise.name
 
   function onSubmit(values: ExerciseValues) {
     const payload: DayExercisePayload = values
     const onError = () => toast.error("No se pudo guardar el ejercicio.")
     const onSuccess = () => {
       toast.success(isEdit ? "Ejercicio actualizado" : "Ejercicio creado")
-      onOpenChange(false)
+      handleOpenChange(false)
     }
     if (isEdit) {
-      update.mutate({ id: exercise!.id, ...payload }, { onSuccess, onError })
+      update.mutate(
+        { id: exercise.id, ...payload, ...(renaming && { applyToAll }) },
+        { onSuccess, onError }
+      )
     } else {
       create.mutate(payload, { onSuccess, onError })
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl leading-none uppercase">
@@ -171,6 +201,26 @@ export function ExerciseFormDialog({
                 </FormItem>
               )}
             />
+
+            {renaming && (
+              <div className="fade-up space-y-2 rounded-lg border border-ember/25 bg-ember/10 px-3.5 py-3 [--delay:0ms]">
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <Checkbox
+                    checked={applyToAll}
+                    onCheckedChange={(v) => setApplyToAll(v === true)}
+                  />
+                  <span className="text-[13px] leading-snug">
+                    Renombrarlo en toda la rutina
+                  </span>
+                </label>
+                <p className="font-mono text-[11px] leading-relaxed text-faint">
+                  El progreso se agrupa por nombre. Sin esto,{" "}
+                  <span className="text-ember">{exercise.name}</span> queda con
+                  el historial partido: lo de antes por un lado y lo nuevo por
+                  otro.
+                </p>
+              </div>
+            )}
 
             <section className="space-y-3">
               <Eyebrow as="p" className="text-primary">
