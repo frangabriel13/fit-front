@@ -3,17 +3,14 @@ import type { Split } from "@/types/api"
 /**
  * Mover elementos de la rutina de lugar.
  *
- * La API guarda la posición en un `order` numérico por elemento; no hay
- * endpoint de "reordenar", así que mover algo es mandar varios PATCH. Lo que
- * decide QUÉ mandar vive acá, puro y sin React.
+ * La API guarda la posición en un `order` numérico por elemento y reordenar es
+ * mandarle la lista completa de hermanos en el orden deseado
+ * (`PUT .../order { ids }`). Lo que decide CÓMO queda esa lista vive acá, puro
+ * y sin React; el envío, en `hooks/use-reorder.ts`.
  */
 
+/** Lo mínimo que se necesita para posicionar algo: quién es y en qué lugar va. */
 export interface Ordered {
-  id: string
-  order: number
-}
-
-export interface OrderPatch {
   id: string
   order: number
 }
@@ -24,8 +21,8 @@ export type OrderedKind = "microcycles" | "days" | "exercises"
 export interface Reordered<T> {
   /** La lista ya movida y renumerada — para pintar sin esperar al servidor. */
   items: T[]
-  /** Solo los que cambiaron de número. Una lista prolija son dos. */
-  patches: OrderPatch[]
+  /** `false` si el movimiento no era posible: no hay nada que mandar ni repintar. */
+  moved: boolean
 }
 
 /**
@@ -42,8 +39,8 @@ export interface Reordered<T> {
  *    elementos compartan `order` —el editor tenía un campo "Orden" a mano—, y
  *    con un empate un intercambio no movería nada.
  *
- * En una lista ya prolija esto cambia exactamente los dos elementos que se
- * cruzaron, así que el caso normal son dos PATCH.
+ * Es la misma regla que aplica el server al recibir los ids, así que lo que se
+ * pinta acá y lo que queda guardado coinciden.
  */
 export function reorder<T extends Ordered>(
   items: T[],
@@ -52,37 +49,33 @@ export function reorder<T extends Ordered>(
 ): Reordered<T> {
   const target = index + dir
   if (index < 0 || index >= items.length || target < 0 || target >= items.length)
-    return { items, patches: [] }
+    return { items, moved: false }
 
   const moved = [...items]
   ;[moved[index], moved[target]] = [moved[target], moved[index]]
 
   const base = Math.min(...items.map((i) => i.order))
-  const renumbered = moved.map((item, i) => ({ ...item, order: base + i }))
-  const patches = renumbered
-    .filter((item, i) => item.order !== moved[i].order)
-    .map(({ id, order }) => ({ id, order }))
-
-  return { items: renumbered, patches }
+  return { items: moved.map((item, i) => ({ ...item, order: base + i })), moved: true }
 }
 
 /**
- * Escribe los nuevos números dentro del `Split` cacheado.
+ * Escribe nuevos números dentro del `Split` cacheado.
  *
- * Todo el editor lee una sola query (el detalle de la rutina), así que la
- * actualización optimista es reescribir ese objeto. Se aplica por id y en el
- * nivel que corresponde: los ids son únicos, pero buscar en todos los niveles
- * haría que un mismo número tocara cosas de distinta profundidad.
+ * Todo el editor lee una sola query (el detalle de la rutina), así que tanto el
+ * repintado optimista como la reconciliación con la respuesta del server son
+ * reescribir ese objeto. Se aplica por id y en el nivel que corresponde: los ids
+ * son únicos, pero buscar en todos los niveles haría que un mismo número tocara
+ * cosas de distinta profundidad.
  */
 export function applyOrders(
   split: Split,
   kind: OrderedKind,
-  patches: OrderPatch[]
+  orders: Ordered[]
 ): Split {
-  if (patches.length === 0) return split
-  const orders = new Map(patches.map((p) => [p.id, p.order]))
+  if (orders.length === 0) return split
+  const byId = new Map(orders.map((o) => [o.id, o.order]))
   const at = <T extends Ordered>(item: T): T => {
-    const order = orders.get(item.id)
+    const order = byId.get(item.id)
     return order == null ? item : { ...item, order }
   }
 

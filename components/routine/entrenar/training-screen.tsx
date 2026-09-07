@@ -103,9 +103,10 @@ export function TrainingScreen({
         </span>
       </div>
 
-      {/* La API deja seguir cargando series en un día cerrado —sirve para
-          corregir— pero sin este aviso nada delata que ya está terminado, y lo
-          que se cargue después cuenta como definitivo. */}
+      {/* Un día cerrado no acepta más series: la API responde 409, y el hook
+          frena la escritura antes de que la planilla muestre algo que no se
+          guardó. Corregir sigue siendo posible, pero pasando por acá — es lo
+          que separa una medición hecha de algo agregado después. */}
       {s.sessionClosed && (
         <div className="fade-up mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-primary/25 bg-primary/10 px-3.5 py-2.5">
           <Eyebrow tone="meta" className="flex items-center gap-2 text-primary">

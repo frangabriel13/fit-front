@@ -48,7 +48,7 @@ export function SplitEditor({ splitId }: { splitId: string }) {
   const router = useRouter()
   const { data: split, isLoading, isError, refetch } = useSplit(splitId)
   const deleteSplit = useDeleteSplit()
-  const reorderMicrocycles = useReorder(splitId, "microcycles")
+  const reorderMicrocycles = useReorder(splitId, "microcycles", splitId)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addMicroOpen, setAddMicroOpen] = useState(false)
@@ -85,8 +85,8 @@ export function SplitEditor({ splitId }: { splitId: string }) {
     microcycles.length > 0 ? Math.max(...microcycles.map((m) => m.order)) + 1 : 0
 
   function moveMicrocycle(i: number, dir: -1 | 1) {
-    const { patches } = reorder(microcycles, i, dir)
-    if (patches.length > 0) reorderMicrocycles.mutate(patches)
+    const { items, moved } = reorder(microcycles, i, dir)
+    if (moved) reorderMicrocycles.mutate(items)
   }
 
   function onConfirmDelete() {

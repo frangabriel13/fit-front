@@ -43,7 +43,7 @@ export function DaySection({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [addExerciseOpen, setAddExerciseOpen] = useState(false)
   const deleteDay = useDeleteDay(splitId)
-  const reorderExercises = useReorder(splitId, "exercises")
+  const reorderExercises = useReorder(splitId, "exercises", day.id)
 
   const exercises = [...(day.exercises ?? [])].sort((a, b) => a.order - b.order)
   const nextOrder =
@@ -54,8 +54,8 @@ export function DaySection({
   const items = toSheetItems(exercises.map(toPlanExercise))
 
   function moveExercise(index: number, dir: -1 | 1) {
-    const { patches } = reorder(exercises, index, dir)
-    if (patches.length > 0) reorderExercises.mutate(patches)
+    const { items, moved } = reorder(exercises, index, dir)
+    if (moved) reorderExercises.mutate(items)
   }
 
   function onConfirmDelete() {

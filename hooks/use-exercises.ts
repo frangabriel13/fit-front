@@ -4,7 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { api, unwrap } from "@/lib/api"
 import { queryKeys } from "@/lib/query-keys"
-import type { DayExercise, DayExercisePayload } from "@/types/api"
+import type {
+  DayExercise,
+  DayExercisePayload,
+  ExercisePatch,
+} from "@/types/api"
 
 function useInvalidateSplit(splitId: string) {
   const queryClient = useQueryClient()
@@ -23,11 +27,19 @@ export function useCreateExercise(splitId: string, dayId: string) {
   })
 }
 
+/**
+ * Editar un ejercicio.
+ *
+ * Con `applyToAll`, el nombre nuevo se propaga a todas sus apariciones en la
+ * rutina — el resto de los campos se aplican solo a este. Invalida la rutina
+ * entera y no solo el ejercicio justamente por eso: un renombre propagado toca
+ * las tres semanas de una.
+ */
 export function useUpdateExercise(splitId: string) {
   const invalidate = useInvalidateSplit(splitId)
   return useMutation({
-    mutationFn: ({ id, ...payload }: DayExercisePayload & { id: string }) =>
-      unwrap<DayExercise>(api.patch(`/exercises/${id}`, payload)),
+    mutationFn: ({ id, ...patch }: ExercisePatch & { id: string }) =>
+      unwrap<DayExercise>(api.patch(`/exercises/${id}`, patch)),
     onSuccess: invalidate,
   })
 }
