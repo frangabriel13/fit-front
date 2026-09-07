@@ -98,8 +98,12 @@ Nada por encima de estos módulos debería formatear un rango de reps ni leer
 ### Capa de datos
 
 - `lib/api.ts` — una sola instancia de axios. El interceptor de request agrega
-  `Authorization: Bearer <token>`; el de response, ante un `401`, borra el token
-  y redirige duro a `/login`. `unwrap<T>()` saca `response.data` con tipos.
+  `Authorization: Bearer <token>`; el de response, ante un `401`, **canjea el
+  refresh y repite el request una vez**, y solo si eso falla borra la sesión y
+  redirige duro a `/login`. El canje sale detrás de `navigator.locks`, que es lo
+  que impide que dos pestañas que vencen a la vez manden el mismo refresh — el
+  segundo sería un reuso, y un reuso revoca la cadena entera. `unwrap<T>()` saca
+  `response.data` con tipos.
 - `hooks/use-*.ts` — un módulo de hooks por recurso (`use-splits`,
   `use-microcycles`, `use-days`, `use-exercises`, `use-sessions`, `use-progress`,
   `use-clients`, `use-auth`). Todos `"use client"`. Las mutaciones invalidan con
@@ -171,10 +175,15 @@ el JWT de verdad es trabajo de la API (responde 401). Después del login,
 que el proxy vea la cookie recién puesta.
 
 El **refresh** va en su propia cookie (`fitfront_refresh`) y nunca en un header:
-es la credencial de `POST /auth/logout`, que es lo que hace que cerrar sesión
-revoque de verdad y no sea solo borrar cookies. El interceptor **todavía no
-canjea el refresh ante un 401** —sigue deslogueando—, y por eso el access token
-dura 7 días; ver `docs/API-CONTRACT.md` §4.
+es la credencial de `POST /auth/refresh` y de `POST /auth/logout` —el segundo es
+lo que hace que cerrar sesión revoque de verdad y no sea solo borrar cookies—, y
+viaja en el body solo de esas dos.
+
+El refresh **rota**: el que se canjea queda revocado, y reusar uno ya canjeado
+revoca la cadena entera del usuario. Por eso el canje del interceptor está
+serializado con `navigator.locks` y, ya con el lock tomado, vuelve a mirar la
+cookie: si otra pestaña refrescó mientras esperaba, usa ese token en vez de
+canjear de nuevo.
 
 ⚠️ **`POST /auth/change-password` cierra TODAS las sesiones** y devuelve un par
 de tokens nuevo. `useChangePassword` lo guarda antes de invalidar `/auth/me`: si

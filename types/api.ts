@@ -150,7 +150,11 @@ export interface ClientPatch {
 
 /** Body de `PATCH /sessions/:id`. `completed` cierra (true) o reabre (false). */
 export interface SessionPatch {
-  notes?: string
+  /**
+   * `null` borra la nota; `""` guarda una nota vacía, que no es lo mismo.
+   * Tope de 2000 caracteres — pasarse es un 400.
+   */
+  notes?: string | null
   completed?: boolean
 }
 

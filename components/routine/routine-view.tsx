@@ -7,6 +7,7 @@ import { useState } from "react"
 import { DayTabs } from "@/components/routine/sheet/day-tabs"
 import { SessionCard } from "@/components/routine/sheet/session-card"
 import { SessionCta } from "@/components/routine/sheet/session-cta"
+import { SessionNotes } from "@/components/routine/sheet/session-notes"
 import { SheetHeader } from "@/components/routine/sheet/sheet-header"
 import { SheetRow } from "@/components/routine/sheet/sheet-row"
 import { useTodaysSession } from "@/hooks/use-active-session"
@@ -93,6 +94,18 @@ export function RoutineView({
           })
         }}
       />
+
+      {/* Solo con sesión: la nota cuelga de ella, no del día. La `key` la rearma
+          al cambiar de día, para que un borrador a medias no se mude. */}
+      {sessionId && (
+        <SessionNotes
+          key={`notes-${sessionId}`}
+          sessionId={sessionId}
+          dayId={day.id}
+          notes={session?.notes}
+          readOnly={readOnly}
+        />
+      )}
 
       <SheetHeader />
 
