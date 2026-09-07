@@ -323,21 +323,39 @@ tres puntos que venían de la ronda anterior:
 
 Lo que sigue abierto:
 
-**Escribir en nombre de un cliente.** No existe y está bien así:
-`useActiveSession` solo abre sesiones del usuario logueado, a propósito. Si
-alguna vez un entrenador tiene que cargar series por su cliente, hace falta
-definir antes quién queda como autor de la sesión.
+**⚠️ Escribir en nombre de un cliente SÍ existe, y no debería.** El criterio de
+lectura que se unificó en esta ronda —el dueño, o el entrenador del dueño— quedó
+aplicado también a las ESCRITURAS. Con el token del entrenador, sobre una sesión
+de su cliente (verificado el 7 de septiembre de 2026):
 
-**Notas de sesión.** `PATCH /sessions/:id` acepta `notes` y el tipo está
-cableado (`SessionPatch`), pero ninguna pantalla las escribe todavía. Es un
-hueco del frontend, no del contrato.
+```
+PUT    /sessions/:id/set-logs   → 200   cargar series a su nombre
+PATCH  /sessions/:id {completed}→ 200   cerrarle o reabrirle el día
+DELETE /sessions/:id            → 204   borrarle la sesión entera
+```
 
-**Refresh automático.** El frontend guarda el `refreshToken` y cierra sesión de
-verdad con `POST /auth/logout`, pero el interceptor de `lib/api.ts` todavía no
-canjea el refresh ante un 401: desloguea. Por eso `JWT_EXPIRES_IN` sigue en
-`7d`. El día que el interceptor refresque hay que avisarle al backend para
-bajarlo a `15m`, y resolver antes el canje simultáneo entre pestañas — el
-refresh rota y reusar uno ya canjeado cierra todas las sesiones del usuario.
+Para leer, el criterio está bien. Para escribir es demasiado ancho: deja al
+entrenador como autor invisible de datos que el gráfico de progresión toma como
+del cliente, y contradice lo que este mismo documento decía. El frontend no lo
+usa —`useActiveSession` solo abre sesiones del usuario logueado y
+`/clientes/[id]` es `readOnly` de punta a punta—, así que no hay nada que
+cambiar acá, pero conviene que lo impida el server y no una convención del
+front. Si en algún momento se quiere de verdad, hay que definir antes quién
+queda como autor.
+
+`PATCH /sessions/:id { notes }` es el mismo caso. La nota del día la escribe
+quien entrenó; el entrenador la lee en `/clientes/[id]` y no la edita.
+
+**➜ `JWT_EXPIRES_IN` se puede bajar a `15m`.** El interceptor de `lib/api.ts` ya
+canjea el refresh ante un 401 y repite el request; solo si el canje falla borra
+la sesión. El canje va detrás de `navigator.locks` y, con el lock tomado, mira
+si la cookie ya cambió antes de mandar nada — sin eso, dos pestañas que vencen
+al mismo tiempo canjearían el mismo refresh, y el segundo sería un reuso.
+
+Verificado que el reuso revoca **todos los refresh** del usuario. Los access
+tokens ya emitidos, en cambio, sobreviven hasta vencer: son stateless, y matarlos
+al instante es algo que solo hace `logout-all`. Con `15m` esa diferencia deja de
+importar; con `7d`, no.
 
 ---
 
