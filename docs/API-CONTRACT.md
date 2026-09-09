@@ -215,6 +215,11 @@ busca el día dentro de esa estructura, no hace una llamada aparte.
   seguidas y ser idempotente.
 - Campos numéricos ausentes (`actualReps`, `actualRir`, `weight`) significan
   "sin dato" → guardar `NULL`, no `0`.
+- **Quién ESCRIBE es más estrecho que quién lee: solo el dueño.** El entrenador
+  lee el historial de su cartera pero no escribe en él —`SetLog` no guarda
+  autor—, así que `PUT /sessions/:id/set-logs`, `PATCH /sessions/:id`,
+  `DELETE /sessions/:id`, `PATCH /set-logs/:id` y `DELETE /set-logs/:id`
+  responden **403** con su token. Ver §4.
 - **Quién puede leer una sesión es un solo criterio, y los dos GET aplican el
   mismo:** su dueño, o el entrenador del dueño. Cualquier otro, `403`; sin
   token, `401`; id inexistente, `404`. `GET /days/:dayId/sessions` sin
@@ -323,28 +328,34 @@ tres puntos que venían de la ronda anterior:
 
 Lo que sigue abierto:
 
-**⚠️ Escribir en nombre de un cliente SÍ existe, y no debería.** El criterio de
-lectura que se unificó en esta ronda —el dueño, o el entrenador del dueño— quedó
-aplicado también a las ESCRITURAS. Con el token del entrenador, sobre una sesión
-de su cliente (verificado el 7 de septiembre de 2026):
+**Cerrado: escribir en nombre de un cliente ya no existe.** El criterio de
+lectura —el dueño, o el entrenador del dueño— había quedado aplicado también a
+las escrituras. Ya no: **el entrenador LEE el historial de su cartera y no
+escribe en él.** Con su token, sobre una sesión de su cliente:
 
 ```
-PUT    /sessions/:id/set-logs   → 200   cargar series a su nombre
-PATCH  /sessions/:id {completed}→ 200   cerrarle o reabrirle el día
-DELETE /sessions/:id            → 204   borrarle la sesión entera
+GET    /sessions/:id            → 200   leer sigue igual
+GET    /days/:dayId/sessions    → 200   con ?userId= también
+
+PUT    /sessions/:id/set-logs   → 403   "Solo quien entrenó puede modificar esta sesión"
+PATCH  /sessions/:id            → 403   cerrar, reabrir o editar la nota
+DELETE /sessions/:id            → 403
+PATCH  /set-logs/:id            → 403
+DELETE /set-logs/:id            → 403
 ```
 
-Para leer, el criterio está bien. Para escribir es demasiado ancho: deja al
-entrenador como autor invisible de datos que el gráfico de progresión toma como
-del cliente, y contradice lo que este mismo documento decía. El frontend no lo
-usa —`useActiveSession` solo abre sesiones del usuario logueado y
-`/clientes/[id]` es `readOnly` de punta a punta—, así que no hay nada que
-cambiar acá, pero conviene que lo impida el server y no una convención del
-front. Si en algún momento se quiere de verdad, hay que definir antes quién
-queda como autor.
+El motivo: `SetLog` no guarda autor, así que una serie cargada por el entrenador
+es indistinguible de una que cargó quien entrenó, y la progresión la toma como
+medición del cliente. Lo mismo con el cierre —`completedAt` es la marca de
+"esto ya es una medición hecha"— y con la nota del día, que la escribe quien
+entrenó.
 
-`PATCH /sessions/:id { notes }` es el mismo caso. La nota del día la escribe
-quien entrenó; el entrenador la lee en `/clientes/[id]` y no la edita.
+El 403 de escritura trae un mensaje propio, distinto del genérico "Sin permiso
+para esta sesión": ahí el problema no es de quién es la sesión, sino que sobre
+las ajenas solo se puede mirar.
+
+Si en algún momento se quiere de verdad, primero hay que decidir quién queda
+como autor y guardarlo en la fila.
 
 **➜ `JWT_EXPIRES_IN` se puede bajar a `15m`.** El interceptor de `lib/api.ts` ya
 canjea el refresh ante un 401 y repite el request; solo si el canje falla borra
